@@ -20,6 +20,7 @@ contract Game is Ownable {
     World public worldContract;
     HeroInventories public heroInventoryContract;
     Items public itemsContract;
+    WeaponsAndArmors public weaponsAndArmorsContract;
 
     mapping(address => bool) public authorizedAddresses;
     mapping(uint256 => uint256) public heroScores;
@@ -50,13 +51,15 @@ contract Game is Ownable {
         address _worldAddress,
         address _heroEncountersAddress,
         address _heroInventoriesAddress,
-        address _itemsAddress
+        address _itemsAddress,
+        address _weaponsAndArmorsAddress
     ) Ownable(msg.sender) {
         heroContract = Hero(_heroAddress);
         worldContract = World(_worldAddress);
         heroEncountersContract = HeroEncounters(_heroEncountersAddress);
         heroInventoryContract = HeroInventories(_heroInventoriesAddress);
         itemsContract = Items(_itemsAddress);
+        weaponsAndArmorsContract = WeaponsAndArmors(_weaponsAndArmorsAddress);
         authorizedAddresses[msg.sender] = true;
     }
 
@@ -100,6 +103,12 @@ contract Game is Ownable {
         itemsContract = Items(_itemsAddress);
     }
 
+    function setWeaponsAndArmorsContract(
+        address _weaponsAndArmorsAddress
+    ) public onlyOwner {
+        weaponsAndArmorsContract = WeaponsAndArmors(_weaponsAndArmorsAddress);
+    }
+
     function isAuthorized(address _address) public view returns (bool) {
         return authorizedAddresses[_address];
     }
@@ -121,7 +130,8 @@ contract Game is Ownable {
         uint8 agility,
         uint8 perception,
         uint8 intelligence,
-        uint8 constitution
+        uint8 constitution,
+        bool gender
     ) public payable {
         require(
             msg.value >= heroContract.price(),
@@ -137,7 +147,8 @@ contract Game is Ownable {
             agility,
             perception,
             intelligence,
-            constitution
+            constitution,
+            gender
         );
         worldContract.placeHero(tokenId, 1);
         heroContract.setLastSavePoint(tokenId, 1);
@@ -183,8 +194,13 @@ contract Game is Ownable {
         console.log("Hero stats PER:", heroStats.PER);
         console.log("Hero stats INT:", heroStats.INT);
         console.log("Hero stats CON:", heroStats.CON);
-        console.log((uint256(12) * heroStats.AGI + uint256(5) * heroStats.PER) / 10);
-        uint256 heroFurtivity = (uint256(12) * heroStats.AGI + uint256(5) * heroStats.PER) / 10;
+        console.log(
+            (uint256(12) * heroStats.AGI + uint256(5) * heroStats.PER) / 10
+        );
+        uint256 heroFurtivity = (uint256(12) *
+            heroStats.AGI +
+            uint256(5) *
+            heroStats.PER) / 10;
         uint256 failureProbability = (25 * dangerLevel * 100) /
             (25 * dangerLevel + heroFurtivity);
         console.log("Hero furtivity: %d", heroFurtivity);
@@ -205,8 +221,14 @@ contract Game is Ownable {
             return EncounterResult(true, monsterType, toNodeId);
         } else {
             if (dangerLevel > 0) {
-                console.log("hero score",heroScores[tokenId] + (25 * dangerLevel + 1) / 2);
-                updateHeroScore(tokenId, heroScores[tokenId] + (25 * dangerLevel + 1) / 2);
+                console.log(
+                    "hero score",
+                    heroScores[tokenId] + (25 * dangerLevel + 1) / 2
+                );
+                updateHeroScore(
+                    tokenId,
+                    heroScores[tokenId] + (25 * dangerLevel + 1) / 2
+                );
                 heroContract.addHeroXP(tokenId, (25 * dangerLevel + 1) / 2);
             }
             worldContract.moveHero(tokenId, toNodeId);
@@ -237,23 +259,51 @@ contract Game is Ownable {
         );
 
         if (lootedItems.length > 0) {
-            updateHeroScore(heroId, heroScores[heroId] + worldContract.getNodeSearchDiff(nodeId));
-            heroContract.addHeroXP(heroId, worldContract.getNodeSearchDiff(nodeId));
+            updateHeroScore(
+                heroId,
+                heroScores[heroId] + worldContract.getNodeSearchDiff(nodeId)
+            );
+            heroContract.addHeroXP(
+                heroId,
+                worldContract.getNodeSearchDiff(nodeId)
+            );
         }
 
         // Mint items to hero
         for (uint256 i = 0; i < lootedItems.length; i++) {
-            itemsContract.mint(
-                address(heroInventoryContract),
-                lootedItems[i],
-                1
-            );
-            heroInventoryContract.addItemToHero(heroId, lootedItems[i], 1);
+            if (lootedItems[i] < 10000) {
+                // ID of an ERC1155 item
+                itemsContract.mint(
+                    address(heroInventoryContract),
+                    lootedItems[i],
+                    1
+                );
+                heroInventoryContract.addItemToHero(heroId, lootedItems[i], 1);
+            } else if (lootedItems[i] >= 10000 && lootedItems[i] < 20000) {
+                // ID of a weapon
+                uint256 weaponId = weaponsAndArmorsContract.mintWeapon(
+                    address(heroInventoryContract),
+                    lootedItems[i]
+                );
+                heroInventoryContract.addERC721ItemToHero(
+                    heroId,
+                    weaponId
+                );
+            } else if (lootedItems[i] >= 20000 && lootedItems[i] < 30000) {
+                // ID of an armor
+                uint256 armorId = weaponsAndArmorsContract.mintArmor(
+                    address(heroInventoryContract),
+                    lootedItems[i]
+                );
+                heroInventoryContract.addERC721ItemToHero(heroId, armorId);
+            }
             emit ItemLooted(heroId, lootedItems[i], 1);
         }
     }
 
-    function heroRest(uint256 heroId) public onlyAuthorized onlyHeroOwner(heroId) {
+    function heroRest(
+        uint256 heroId
+    ) public onlyAuthorized onlyHeroOwner(heroId) {
         uint256 heroLocation = worldContract.heroLocations(heroId);
         require(worldContract.isShelter(heroLocation), "Node is not a shelter");
         heroContract.rest(heroId, heroLocation);
@@ -268,7 +318,7 @@ contract Game is Ownable {
         if (slot == EquipmentSlot.Weapon)
             heroContract.changeHeroDamages(
                 heroId,
-                itemsContract.getWeapon(itemId).damage
+                weaponsAndArmorsContract.getWeapon(itemId).damage
             );
         if (uint256(slot) < 4) {
             heroContract.changeHeroArmor(
@@ -302,12 +352,30 @@ contract Game is Ownable {
             heroInventoryContract.getHeroItemBalance(heroId, itemId) >= amount,
             "Not enough items to throw"
         );
-        itemsContract.burn(address(heroInventoryContract), itemId, amount);
-        heroInventoryContract.removeItemsFromHero(heroId, itemId, amount);
+        heroInventoryContract.throwItem(heroId, itemId, amount);
     }
 
     function randMod(uint256 _modulus) internal view returns (uint256) {
         return uint256(keccak256(abi.encodePacked(block.timestamp))) % _modulus;
+    }
+
+    function heroRepairItem(
+        uint256 heroId,
+        uint256 itemToRepairId,
+        uint256 itemToUseId
+    ) external onlyAuthorized onlyHeroOwner(heroId) {
+        //check hero has the erc721 item
+        require(
+            heroInventoryContract.hasERC721Item(heroId, itemToRepairId), "Hero does not own this item"
+        );
+        require(
+            heroInventoryContract.getHeroItemBalance(heroId, itemToUseId) > 0,
+            "Hero does not own this item"
+        );
+        require(itemsContract.getAllStatModifiers(itemToUseId)[0].stat == StatType.DUR, "Item is not a repair item");
+        heroInventoryContract.consumeConsumable(heroId, itemToUseId);
+        int16 repairDur = itemsContract.getAllStatModifiers(itemToUseId)[0].amount;
+        weaponsAndArmorsContract.repairItem(itemToRepairId, repairDur);
     }
 
     function heroConsumeItem(
@@ -359,6 +427,7 @@ contract Game is Ownable {
             itemsContract.balanceOf(msg.sender, itemId) >= amounts,
             "Not the owner of the item"
         );
+        console.log("Transfering items to contract");
         itemsContract.safeTransferFrom(
             msg.sender,
             address(heroInventoryContract),
@@ -366,7 +435,10 @@ contract Game is Ownable {
             amounts,
             ""
         );
-
+        console.log("Setting item table for hero");
+        console.log("HeroId: %d", heroId);
+        console.log("ItemId: %d", itemId);
+        console.log("Amounts: %d", amounts);
         heroInventoryContract.addItemToHero(heroId, itemId, amounts);
     }
 
@@ -392,6 +464,22 @@ contract Game is Ownable {
             uint256 lastPoint = heroContract.getLastSavePoint(tokenId);
             worldContract.placeHero(tokenId, lastPoint);
         }
+        Equipment memory equippedItems = heroInventoryContract.getEquippedItems(tokenId);
+        if (equippedItems.Head != 0) {
+            heroInventoryContract.reduceItemDurability(tokenId,EquipmentSlot.Head,1);
+        }
+        if (equippedItems.Torso != 0) {
+            heroInventoryContract.reduceItemDurability(tokenId,EquipmentSlot.Torso,1);
+        }
+        if (equippedItems.Pants != 0) {
+            heroInventoryContract.reduceItemDurability(tokenId,EquipmentSlot.Pants,1);
+        }
+        if (equippedItems.Boots != 0) {
+            heroInventoryContract.reduceItemDurability(tokenId,EquipmentSlot.Boots,1);
+        }
+        if (equippedItems.Weapon != 0) {
+            heroInventoryContract.reduceItemDurability(tokenId,EquipmentSlot.Weapon,1);
+        }
         heroEncountersContract.resolveEncounter(tokenId);
     }
 
@@ -415,8 +503,8 @@ contract Game is Ownable {
 
     function updateHeroScore(uint256 heroId, uint256 newScore) internal {
         heroScores[heroId] = newScore;
-        console.log('Score given');
+        console.log("Score given");
         emit ScoreUpdated(heroId, newScore);
-        console.log('Score updated');
+        console.log("Score updated");
     }
 }

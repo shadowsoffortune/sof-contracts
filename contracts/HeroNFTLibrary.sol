@@ -17,11 +17,14 @@ library HeroNFTLibrary {
         HeroStats memory stats,
         uint256 energy,
         uint256 XPRequiredForNextLevel,
-        HeroClasses.HeroClass memory heroClass
-    ) external pure returns (string memory) {
+        HeroClasses.HeroClass memory heroClass,
+        bool isMale
+    ) external pure returns (string memory) {            
         string memory json = string(abi.encodePacked(
                         '{"name": "',
                         heroName,
+                        '", "gender": "',
+                        isMale ? "Male" : "Female",
                         '", "class": "',
                         heroClass.name,
                         '", "description": "',

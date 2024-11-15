@@ -160,7 +160,8 @@ contract Hero is ERC721, Ownable {
                 stats,
                 energy,
                 XPRequiredForLevel,
-                heroClass
+                heroClass,
+                gender == Gender.Male
             );
     }
 
@@ -173,7 +174,8 @@ contract Hero is ERC721, Ownable {
         uint8 agility,
         uint8 perception,
         uint8 intelligence,
-        uint8 constitution
+        uint8 constitution,
+        bool gender
     ) public payable onlyGame returns (uint256) {
         if (msg.value < price) revert InsufficientPayment();
         if (strength + agility + perception + intelligence + constitution != 50)
@@ -212,6 +214,12 @@ contract Hero is ERC721, Ownable {
             LEVEL: 1,
             unspentStatPoints: 0
         });
+
+        if(gender) {
+            heroGenders[_tokenIds] = Gender.Male;
+        } else {
+            heroGenders[_tokenIds] = Gender.Female;
+        }
 
         heroClassIndices[_tokenIds] = classIndex;
 

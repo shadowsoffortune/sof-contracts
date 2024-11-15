@@ -29,7 +29,8 @@ enum StatType {
     XP,
     ENERGY,
     DAMAGE,
-    ARMOR
+    ARMOR,
+    DUR
 }
 
 struct StatModifiersStruct {
@@ -44,4 +45,40 @@ enum EquipmentSlot {
     Pants,
     Boots,
     Weapon
+}
+
+struct Equipment {
+    uint256 Head;
+    uint256 Torso;
+    uint256 Pants;
+    uint256 Boots;
+    uint256 Weapon;
+}
+
+// Structures pour les instances
+struct WeaponInstance {
+    uint256 tokenId;
+    uint256 typeId;
+    string name;
+    string damage;
+    uint16 maxDurability;
+    uint16 currentDurability;
+    string damageType;
+}
+
+struct ArmorInstance {
+    uint256 tokenId;
+    uint256 typeId;
+    string name;
+    uint8 defense;
+    uint16 maxDurability;
+    uint16 currentDurability;
+    ArmorTypeEnum armorSlot;
+}
+
+enum ArmorTypeEnum {
+    Head,
+    Torso,
+    Pants,
+    Boots
 }

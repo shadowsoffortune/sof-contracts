@@ -9,6 +9,8 @@ import {StatModifiersStruct} from "./globals/heroes.sol";
 import "hardhat/console.sol";
 
 contract Items is ERC1155, Ownable {
+    uint256 public constant ERC1155_ID_OFFSET = 1;
+
     address public gameAddress;
 
     modifier onlyGameOrOwner() {
@@ -35,7 +37,7 @@ contract Items is ERC1155, Ownable {
     struct Weapon {
         uint256 id;
         string damage;
-        uint16 resistance;
+        uint16 durability;
         string damageType;
     }
 
@@ -48,7 +50,7 @@ contract Items is ERC1155, Ownable {
     struct Armor {
         uint256 id;
         uint8 defense;
-        uint16 resistance;
+        uint16 durability;
         ArmorType armorType;
     }
 
@@ -69,7 +71,7 @@ contract Items is ERC1155, Ownable {
         ItemType itemType;
         string damage;
         uint8 defense;
-        uint16 resistance;
+        uint16 durability;
         string damageType;
         ArmorType armorType;
         StatModifiersStruct[] statModifiers;
@@ -102,14 +104,14 @@ contract Items is ERC1155, Ownable {
                 weapons[id] = Weapon({
                     id: id,
                     damage: inputItem.damage,
-                    resistance: inputItem.resistance,
+                    durability: inputItem.durability,
                     damageType: inputItem.damageType
                 });
             } else if (inputItem.itemType == ItemType.Armor) {
                 armors[id] = Armor({
                     id: id,
                     defense: inputItem.defense,
-                    resistance: inputItem.resistance,
+                    durability: inputItem.durability,
                     armorType: inputItem.armorType
                 });
             } else if (inputItem.itemType == ItemType.Consumable) {
@@ -130,7 +132,7 @@ contract Items is ERC1155, Ownable {
         uint256 id,
         string memory name,
         string memory damage,
-        uint16 resistance,
+        uint16 durability,
         string memory damageType
     ) external onlyOwner {
         items[id] = Item({id: id, name: name, itemType: ItemType.Weapon});
@@ -138,7 +140,7 @@ contract Items is ERC1155, Ownable {
         weapons[id] = Weapon({
             id: id,
             damage: damage,
-            resistance: resistance,
+            durability: durability,
             damageType: damageType
         });
     }
@@ -147,7 +149,7 @@ contract Items is ERC1155, Ownable {
         uint256 id,
         string memory name,
         uint8 defense,
-        uint16 resistance,
+        uint16 durability,
         ArmorType armorType
     ) external onlyOwner {
         items[id] = Item({id: id, name: name, itemType: ItemType.Armor});
@@ -155,7 +157,7 @@ contract Items is ERC1155, Ownable {
         armors[id] = Armor({
             id: id,
             defense: defense,
-            resistance: resistance,
+            durability: durability,
             armorType: armorType
         });
     }
@@ -179,6 +181,11 @@ contract Items is ERC1155, Ownable {
     function getWeapon(uint256 id) external view returns (Weapon memory) {
         require(items[id].itemType == ItemType.Weapon, "Item is not a weapon");
         return weapons[id];
+    }
+
+    function getArmor(uint256 id) external view returns (Armor memory) {
+        require(items[id].itemType == ItemType.Armor, "Item is not armor");
+        return armors[id];
     }
 
     function getArmorDefense(uint256 id) external view returns (uint8 armor) {
@@ -241,7 +248,7 @@ contract Items is ERC1155, Ownable {
         _mintBatch(to, ids, amounts, "");
     }
 
-    function burn(address account, uint256 id, uint256 amount) public {
+    function burn(address account, uint256 id, uint256 amount) external {
         require(account == msg.sender || account == owner(), "Unauthorized");
         require(balanceOf(account, id) >= amount, "Not enough items to burn");
         _burn(account, id, amount);
