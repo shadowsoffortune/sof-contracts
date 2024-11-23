@@ -187,7 +187,7 @@ async function main() {
 
 
   // Créez les nœuds pour chaque passage en s'appuyant sur un json chargé depuis la dapp, lui meme basé sur la db
-  const json = await fetch('http://localhost:3000/api/nodes', {
+  const json = await fetch(`${process.env.DAPP_URL}/api/nodes`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -235,7 +235,7 @@ async function main() {
 
 
   // Add items to the world
-  const itemsData = await fetch('http://localhost:3000/api/items')
+  const itemsData = await fetch(`${process.env.DAPP_URL}/api/item`)
     .then((response) => response.json())
 
   let statModifiersFinal: StatModifiersStructStruct[] = [];
@@ -315,7 +315,7 @@ async function main() {
 
   // Create monsters
 
-  const monstersData = await fetch('http://localhost:3000/api/monsters')
+  const monstersData = await fetch(`${process.env.DAPP_URL}/api/monsters`)
     .then((response) => response.json())
 
   for (const monster of monstersData) {
