@@ -187,6 +187,7 @@ async function main() {
 
 
   // Créez les nœuds pour chaque passage en s'appuyant sur un json chargé depuis la dapp, lui meme basé sur la db
+  console.log('fetching nodes from the dapp', `${process.env.DAPP_URL}/api/nodes`);
   const json = await fetch(`${process.env.DAPP_URL}/api/nodes`, {
     method: 'GET',
     headers: {
