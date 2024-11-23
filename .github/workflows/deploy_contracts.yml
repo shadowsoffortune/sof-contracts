@@ -1,0 +1,86 @@
+name: Deploy contracts and update Vercel environment variables
+
+on:
+  push:
+    branches:
+      - staging
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: checkout project
+      uses: actions/checkout@v3
+
+    - name: use Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    - name: install dependencies
+      run: npm install
+
+    - name: configure env variables
+      run: |
+        echo "SONIC_PRIVATE_KEY=${{ secrets.SONIC_PRIVATE_KEY }}" >> .env
+        echo "SONIC_TESTNET_URL=https://rpc.sonic.fantom.network/" >> .env
+
+    - name: execute deploy script
+      id: deploy_script
+      run: |
+        npx hardhat run scripts/deploy_and_create_world.ts --network sonicTestnet 2>&1 | tee script_output.txt
+
+    - name: extract addresses 
+      id: extract_addresses
+      run: |
+        GAME_ADDRESS=$(grep "NEXT_PUBLIC_GAME_ADDRESS=" script_output.txt | awk -F= '{print $2}')
+        WORLD_ADDRESS=$(grep "NEXT_PUBLIC_WORLD_ADDRESS=" script_output.txt | awk -F= '{print $2}')
+        HERO_ADDRESS=$(grep "NEXT_PUBLIC_HERO_ADDRESS=" script_output.txt | awk -F= '{print $2}')
+        HEROENCOUNTERS_ADDRESS=$(grep "NEXT_PUBLIC_HEROENCOUNTERS_ADDRESS=" script_output.txt | awk -F= '{print $2}')
+        HEROCLASSES_ADDRESS=$(grep "NEXT_PUBLIC_HEROCLASSES_ADDRESS=" script_output.txt | awk -F= '{print $2}')
+        MONSTERS_ADDRESS=$(grep "NEXT_PUBLIC_MONSTERS_ADDRESS=" script_output.txt | awk -F= '{print $2}')
+        HERO_INVENTORIES_ADDRESS=$(grep "NEXT_PUBLIC_HERO_INVENTORIES_ADDRESS=" script_output.txt | awk -F= '{print $2}')
+
+        echo "GAME_ADDRESS=$GAME_ADDRESS" >> $GITHUB_ENV
+        echo "WORLD_ADDRESS=$WORLD_ADDRESS" >> $GITHUB_ENV
+        echo "HERO_ADDRESS=$HERO_ADDRESS" >> $GITHUB_ENV
+        echo "HEROENCOUNTERS_ADDRESS=$HEROENCOUNTERS_ADDRESS" >> $GITHUB_ENV
+        echo "HEROCLASSES_ADDRESS=$HEROCLASSES_ADDRESS" >> $GITHUB_ENV
+        echo "MONSTERS_ADDRESS=$MONSTERS_ADDRESS" >> $GITHUB_ENV
+        echo "HERO_INVENTORIES_ADDRESS=$HERO_INVENTORIES_ADDRESS" >> $GITHUB_ENV
+
+    - name: update env variables on Vercel
+      env:
+        VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        GAME_ADDRESS: ${{ env.GAME_ADDRESS }}
+        WORLD_ADDRESS: ${{ env.WORLD_ADDRESS }}
+        HERO_ADDRESS: ${{ env.HERO_ADDRESS }}
+        HEROENCOUNTERS_ADDRESS: ${{ env.HEROENCOUNTERS_ADDRESS }}
+        HEROCLASSES_ADDRESS: ${{ env.HEROCLASSES_ADDRESS }}
+        MONSTERS_ADDRESS: ${{ env.MONSTERS_ADDRESS }}
+        HERO_INVENTORIES_ADDRESS: ${{ env.HERO_INVENTORIES_ADDRESS }}
+      run: |
+        # update_env_var function
+        update_env_var() {
+          local name=$1
+          local value=$2
+          curl -s -X POST "https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID/env" \
+          -H "Authorization: Bearer $VERCEL_TOKEN" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "key": "'"$name"'",
+            "value": "'"$value"'",
+            "target": ["preview"],
+            "type": "encrypted"
+          }' > /dev/null
+        }
+
+        update_env_var "NEXT_PUBLIC_GAME_ADDRESS" "$GAME_ADDRESS"
+        update_env_var "NEXT_PUBLIC_WORLD_ADDRESS" "$WORLD_ADDRESS"
+        update_env_var "NEXT_PUBLIC_HERO_ADDRESS" "$HERO_ADDRESS"
+        update_env_var "NEXT_PUBLIC_HEROENCOUNTERS_ADDRESS" "$HEROENCOUNTERS_ADDRESS"
+        update_env_var "NEXT_PUBLIC_HEROCLASSES_ADDRESS" "$HEROCLASSES_ADDRESS"
+        update_env_var "NEXT_PUBLIC_MONSTERS_ADDRESS" "$MONSTERS_ADDRESS"
+        update_env_var "NEXT_PUBLIC_HERO_INVENTORIES_ADDRESS" "$HERO_INVENTORIES_ADDRESS"
