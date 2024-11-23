@@ -17,16 +17,12 @@ let addr4: SignerWithAddress; // game wallet 2
 
 async function main() {
 
-  // Déployez les contrats
   [owner, addr1, addr2, addr3, addr4] = await ethers.getSigners();
 
   const ownerAddress = owner.address;
 
-  // Récupérer le nonce actuel
   let nonce = await ethers.provider.getTransactionCount(ownerAddress);
   console.log("Current nonce:", nonce);
-
-
   console.log("Owner address:", ownerAddress);
 
   // Options de gas (vous pouvez ajuster ces valeurs)
