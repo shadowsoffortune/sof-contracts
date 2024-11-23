@@ -4,10 +4,11 @@ on:
   push:
     branches:
       - staging
-
+    
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: staging
 
     steps:
     - name: checkout project
