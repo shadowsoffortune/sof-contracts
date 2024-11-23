@@ -28,7 +28,7 @@ jobs:
         SONIC_PRIVATE_KEY: ${{ secrets.SONIC_PRIVATE_KEY }}
         SONIC_TESTNET_URL: "https://rpc.sonic.fantom.network/"
         LOCALHOST_PRIVATE_KEY: ${{ secrets.LOCALHOST_PRIVATE_KEY }}
-        DAPP_URL: ${{ env.DAPP_URL }}
+        DAPP_URL: ${{ vars.DAPP_URL }}
 
     - name: execute deploy script
       id: deploy_script
