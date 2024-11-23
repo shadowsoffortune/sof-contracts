@@ -28,7 +28,7 @@ async function main() {
   // Options de gas (vous pouvez ajuster ces valeurs)
   const gasOptions = {
     gasPrice: ethers.parseUnits("40", "gwei"),
-    gasLimit: 8000000, // Ajustez également le gas limit si nécessaire
+    gasLimit: 8000000, 
   };
 
   async function sendTransactionWithRetry(txFunc: (overrides: any) => Promise<any>, maxRetries: number = 3) {
