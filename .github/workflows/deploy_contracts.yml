@@ -21,15 +21,13 @@ jobs:
     - name: install dependencies
       run: npm install
 
-    - name: configure env variables
-      run: |
-        echo "SONIC_PRIVATE_KEY=${{ secrets.SONIC_PRIVATE_KEY }}" >> .env
-        echo "SONIC_TESTNET_URL=https://rpc.sonic.fantom.network/" >> .env
-
     - name: execute deploy script
       id: deploy_script
       run: |
         npx hardhat run scripts/deploy_and_create_world.ts --network sonicTestnet 2>&1 | tee script_output.txt
+      env:
+        SONIC_PRIVATE_KEY: ${{ secrets.SONIC_PRIVATE_KEY }}
+        SONIC_TESTNET_URL: https://rpc.sonic.fantom.network/
 
     - name: extract addresses 
       id: extract_addresses
