@@ -1,4 +1,3 @@
-// scripts/createEnvFile.js
 const fs = require('fs');
 
 const envContent = `
