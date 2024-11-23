@@ -182,26 +182,6 @@ async function main() {
   await items.setGameAddress(gameAddress);
   await weaponsAndArmors.setGameAddress(gameAddress);
 
-  // Get all the contracts
-  // get World contract from address
-  // NEXT_PUBLIC_GAME_ADDRESS= 0xFeF36b2d2fE0B868e699D51F6D09ce116cA45660
-  // NEXT_PUBLIC_WORLD_ADDRESS= 0xf35004A2a1102061F17FC6990Db5f6E6409Ca50C
-  // NEXT_PUBLIC_HERO_ADDRESS= 0x0C1D8983a7f9fa98f2d510664905ae58449e3a9E
-  // NEXT_PUBLIC_HEROENCOUNTERS_ADDRESS= 0x15a8C07119655Ed32723B1aBf80C9bf6D33f9Cfd
-  // NEXT_PUBLIC_HEROCLASSES_ADDRESS= 0x27c9D1046Ecd284B21e7EB0bDF707B420ec0DE84
-  // NEXT_PUBLIC_MONSTERS_ADDRESS= 0x15F3359Ea1B101631b2d227f318E0e34931790De
-  // NEXT_PUBLIC_HERO_INVENTORIES_ADDRESS= 0x82F17238E1cb12c096112c18804C9BAFbF99DEAc
-  // const world = await ethers.getContractAt("World", "0xf35004A2a1102061F17FC6990Db5f6E6409Ca50C");
-  // const hero = await ethers.getContractAt("Hero", "0x0C1D8983a7f9fa98f2d510664905ae58449e3a9E");
-  // const game = await ethers.getContractAt("Game", "0xFeF36b2d2fE0B868e699D51F6D09ce116cA45660");
-  // const monsters = await ethers.getContractAt("Monsters", "0x15F3359Ea1B101631b2d227f318E0e34931790De");
-  // const heroClasses = await ethers.getContractAt("HeroClasses", "0x27c9D1046Ecd284B21e7EB0bDF707B420ec0DE84");
-  // const items = await ethers.getContractAt("Items", "0x12077E14d3AD7A649a279156dE793b8E113F80Ed");
-  // const weaponsAndArmors = await ethers.getContractAt("WeaponsAndArmors", "0xb611d7D4A3d52b643c6C11fEB50FB7EF7Cacf1E0");
-  // const heroInventory = await ethers.getContractAt("HeroInventories", "0x82F17238E1cb12c096112c18804C9BAFbF99DEAc");
-
-
-
   // Créer les classes de héros
   for (const heroClass of HEROES) {
     const tx = await heroClasses.addClass(heroClass.name, heroClass.description, heroClass.maleSkinURI, heroClass.femaleSkinURI);
