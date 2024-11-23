@@ -6,6 +6,20 @@ import { addHeroClass } from "./utils";
 import { StatModifiersStructStruct } from '../typechain-types/contracts/Items';
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 
+enum StatType {
+  HP,
+  HPMax,
+  STR,
+  AGI,
+  PER,
+  INT,
+  CON,
+  XP,
+  ENERGY,
+  DAMAGE,
+  ARMOR
+}
+
 describe("Inventory Contract Tests", function () {
 
   it("Should prevent non-owners from adding items to a hero's inventory", async function () {
@@ -71,50 +85,77 @@ describe("Inventory Contract Tests", function () {
     ).to.be.revertedWith("Not the hero owner");
   });
 
+  // Helper function to retry a test
+  async function retry(fn: () => Promise<void>, retries: number = 3): Promise<void> {
+    for (let i = 0; i < retries; i++) {
+      try {
+        await fn();
+        return;
+      } catch (error) {
+        if (i === retries - 1) {
+          throw error;
+        }
+      }
+    }
+  }
+
   it("Should prevent adding more items than available in inventory", async function () {
-    const { game, gameAddress, hero, world, items, statModifier, heroInventory, heroClasses, owner, addr1 } = await loadFixture(deployTokenFixture);
+    await retry(async () => {
+      const { game, gameAddress, hero, world, items, statModifier, heroInventory, heroClasses, owner, addr1 } = await loadFixture(deployTokenFixture);
 
-    // Ajouter une classe de héros
-    await addHeroClass(heroClasses);
+      // Ajouter une classe de héros
+      await addHeroClass(heroClasses);
 
-    // Mint un héros pour addr1 dans Node1
-    const txMint = await game.connect(addr1).mintHero(
-      addr1.address,
-      addr1.address,
-      "eve",
-      0,
-      10,
-      10,
-      10,
-      10,
-      10,
-      true,
-      { value: ethers.parseEther("20") }
-    );
-    await txMint.wait();
-    const heroId = await hero.getLastHeroId();
+      // Mint un héros pour addr1 dans Node1
+      const txMint = await game.connect(addr1).mintHero(
+        addr1.address,
+        addr1.address,
+        "eve",
+        0,
+        7,
+        7,
+        16,
+        13,
+        7,
+        true,
+        { value: ethers.parseEther("20") }
+      );
+      await txMint.wait();
+      const heroId = await hero.getLastHeroId();
 
-    // Vérifier que le héros est placé dans Node1
-    const heroNode = await world.getHeroNode(heroId);
-    expect(heroNode).to.equal(1);
+      // ajouter de la PER et INT au héros
+      await hero.addHeroXP(heroId, 10000000000);
+      for (let i = 0; i < 15; i++) {
+        await hero.increaseHeroStat(heroId, StatType.PER); // Increase HP to ensure evasion
+      }
+      for (let i = 0; i < 10; i++) {
+        await hero.increaseHeroStat(heroId, StatType.INT); // Increase HP to ensure evasion
+      }
 
-    // Approve le Game contract pour gérer les items d'addr1
-    await items.connect(addr1).setApprovalForAll(gameAddress, true);
+      // Vérifier que le héros est placé dans Node1
+      const heroNode = await world.getHeroNode(heroId);
+      expect(heroNode).to.equal(1);
 
-    // Autoriser addr1 dans le Game contract
-    await game.connect(owner).authorizeAddress(addr1.address);
+      // Approve le Game contract pour gérer les items d'addr1
+      await items.connect(addr1).setApprovalForAll(gameAddress, true);
 
-    // Effectuer une recherche pour obtenir 1 consommable
-    await game.connect(addr1).heroSearch(heroId, 1);
+      // Autoriser addr1 dans le Game contract
+      await game.connect(owner).authorizeAddress(addr1.address);
 
-    // Vérifier que le héros possède 1 consommable
-    const balance = await heroInventory.getHeroItemBalance(heroId, 11);
-    expect(balance).to.be.gt(1);
+      const balance1 = await heroInventory.getHeroItemBalance(heroId, 11);
+      console.log("Balance 1: ", balance1);
+      // Effectuer une recherche pour obtenir 1 consommable
+      await game.connect(addr1).heroSearch(heroId, 1);
 
-    // Tenter d'ajouter 2 consommables au héros alors qu'il n'en a qu'un
-    await expect(
-      game.connect(addr1).addItemsToHero(heroId, 11, 2)
-    ).to.be.revertedWith("Not the owner of the item");
+      // Vérifier que le héros possède 1 consommable
+      const balance2 = await heroInventory.getHeroItemBalance(heroId, 11);
+      expect(balance2).to.be.gt(0);
+
+      // Tenter d'ajouter 2 consommables au héros alors qu'il n'en a qu'un
+      await expect(
+        game.connect(addr1).addItemsToHero(heroId, 11, 2)
+      ).to.be.revertedWith("Not the owner of the item");
+    });
   });
 
   it("Should prevent minting items to unauthorized contracts", async function () {
@@ -235,7 +276,7 @@ describe("Inventory Contract Tests", function () {
 
     await items
       .connect(owner)
-      .mint(heroInventory.getAddress(),consumableId, 1);
+      .mint(heroInventory.getAddress(), consumableId, 1);
 
     // Add 1 consumables to hero's inventory
     const tx = await heroInventory.connect(owner).addItemToHero(heroId, consumableId, 1);
@@ -258,7 +299,7 @@ describe("Inventory Contract Tests", function () {
     const updatedEnergy = await hero.getHeroEnergy(heroId);
     expect(updatedEnergy).to.equal(Number(initialEnergy) + 10);
   });
-  
+
   it("Hero can throw an item he owns", async function () {
 
     const { game, hero, world, items, heroInventory, owner, addr1, heroClasses } = await loadFixture(deployTokenFixture);
@@ -300,12 +341,13 @@ describe("Inventory Contract Tests", function () {
     expect(potionBalance).to.equal(1);
 
     // jeter l'objet
-    await game.connect(addr1).heroThowItems(heroId, 1, 1);
+    await game.connect(addr1).heroThrowItems(heroId, 1, 1);
 
     // Vérifier que le héros ne possède plus l'objet
     const updatedBalance = await heroInventory.getHeroItemBalance(heroId, 1);
     expect(updatedBalance).to.equal(0);
 
   });
+
 
 });

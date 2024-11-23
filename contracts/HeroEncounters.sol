@@ -8,6 +8,7 @@ contract HeroEncounters is Ownable {
         uint256 toNodeId;
         uint256 monsterType;
         bool isActive;
+        uint8 actionType; // 0 = move, 1 = search
     }
 
     mapping(uint256 => Encounter) public encounters;
@@ -26,13 +27,15 @@ contract HeroEncounters is Ownable {
     function initiateEncounter(
         uint256 tokenId,
         uint256 toNodeId,
-        uint256 monsterType
+        uint256 monsterType,
+        uint8 actionType
     ) public onlyGame {
         require(!encounters[tokenId].isActive, "Encounter already active");
         encounters[tokenId] = Encounter({
             toNodeId: toNodeId,
             monsterType: monsterType,
-            isActive: true
+            isActive: true,
+            actionType: actionType
         });
     }
 

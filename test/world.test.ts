@@ -47,7 +47,9 @@ describe("World Contract Tests - Cooldown Functionality", function () {
         true,
         1,
         0, // Pas de cooldownPeriod spécifié,
-        false
+        false,
+        1,
+        []
       )
     ).to.emit(world, "NodeCreated");
 
@@ -147,6 +149,9 @@ describe("World Contract Tests - Cooldown Functionality", function () {
     // Move hero to node 2
     await game.connect(addr1).moveHero(heroId, nodeId2);
 
+    // change node dangerosity
+    await world.connect(owner).setNodeDangerosity(nodeId2, 0);
+
     // Hero searches node 2
     await game.connect(addr1).heroSearch(heroId, nodeId2);
 
@@ -222,6 +227,9 @@ describe("World Contract Tests - Cooldown Functionality", function () {
 
     // Move hero to node 2
     await game.connect(addr1).moveHero(heroId, nodeId2);
+
+    //change node dangerosity
+    await world.connect(owner).setNodeDangerosity(nodeId2, 0);
 
     // Hero searches node 2
     await game.connect(addr1).heroSearch(heroId, nodeId2);

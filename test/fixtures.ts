@@ -115,6 +115,7 @@ export async function deployTokenFixture() {
     // price of minting a hero
     console.log("Price of minting a hero:", await hero.price());
 
+    let nodeDifficulty = 1;
     // init the world with 10 nodes
     for (let i = 0; i < 10; i++) {
         let cooldownPeriod = 0; // Utiliser le cooldown par défaut de 6 heures
@@ -123,7 +124,17 @@ export async function deployTokenFixture() {
             cooldownPeriod = 12 * 3600; // 12 heures pour le nœud 5
         }
 
-        const tx = await world.createNode(i, "Maison " + i, true, 1, cooldownPeriod, false);
+        if (i == 2) {
+            nodeDifficulty = 4;
+        } else {
+            if (i == 1) {
+                nodeDifficulty = 0;
+            }
+            else {
+                nodeDifficulty = 1;
+            }
+        }
+        const tx = await world.createNode(i, "Maison " + i, true, 1, cooldownPeriod, false, nodeDifficulty, [{ id: 1, weight: 50 }]);
         await tx.wait();
 
         if (i < 9) {
@@ -141,23 +152,23 @@ export async function deployTokenFixture() {
 
     // connect nodes together
     console.log("Connecting nodes together");
-    await world.connectNodes(1, 2, 1, [{ id: 1,weight: 50 }]);
-    await world.setConnectionDangerosity(1, 2, 0); // Setting danger level high to ensure encounter
-    await world.connectNodes(2, 3, 1,   [{ id: 1,weight: 50 }]);
+    await world.connectNodes(1, 2, 1, [{ id: 1, weight: 50 }]);
+    await world.setConnectionDangerosity(1, 2, 0); // Setting danger level low to avoid encounter
+    await world.connectNodes(2, 3, 1, [{ id: 1, weight: 50 }]);
     await world.setConnectionDangerosity(2, 3, 0); // Setting danger level high to ensure encounter
-    await world.connectNodes(3, 4, 1,   [{ id: 1,weight: 50 }]);
+    await world.connectNodes(3, 4, 1, [{ id: 1, weight: 50 }]);
     await world.setConnectionDangerosity(3, 4, 0); // Setting danger level high to ensure encounter
-    await world.connectNodes(4, 5, 1,  [{ id: 1,weight: 50 }]);
+    await world.connectNodes(4, 5, 1, [{ id: 1, weight: 50 }]);
     await world.setConnectionDangerosity(4, 5, 0); // Setting danger level high to ensure encounter
-    await world.connectNodes(5, 6, 1, [{ id: 1,weight: 50 }]);
+    await world.connectNodes(5, 6, 1, [{ id: 1, weight: 50 }]);
     await world.setConnectionDangerosity(5, 6, 0); // Setting danger level high to ensure encounter
-    await world.connectNodes(6, 7, 1,  [{ id: 1,weight: 50 }]);
+    await world.connectNodes(6, 7, 1, [{ id: 1, weight: 50 }]);
     await world.setConnectionDangerosity(6, 7, 0); // Setting danger level high to ensure encounter
-    await world.connectNodes(7, 8, 1, [{ id: 1,weight: 50 }]);
+    await world.connectNodes(7, 8, 1, [{ id: 1, weight: 50 }]);
     await world.setConnectionDangerosity(7, 8, 0); // Setting danger level high to ensure encounter
-    await world.connectNodes(8, 9, 1, [{ id: 1,weight: 50 }]);
+    await world.connectNodes(8, 9, 1, [{ id: 1, weight: 50 }]);
     await world.setConnectionDangerosity(8, 9, 0); // Setting danger level high to ensure encounter
-    await world.connectNodes(8, 2, 1, [{ id: 1,weight: 50 }]);
+    await world.connectNodes(8, 2, 1, [{ id: 1, weight: 50 }]);
     await world.setConnectionDangerosity(8, 2, 0); // Setting danger level high to ensure encounter
 
 
@@ -168,7 +179,7 @@ export async function deployTokenFixture() {
     const monstersAddress = await monsters.getAddress();
     console.log("Deployed monsters contract at:", monstersAddress);
 
-    const txMon = await monsters.createMonster(1,"Zombi", 10, 8, 8, 8, 8, 8, "1D2", 0, 10);
+    const txMon = await monsters.createMonster(1, "Zombi", 10, 8, 8, 8, 8, 8, "1D2", 0, 10);
     await txMon.wait();
 
     const add = await world.addDefaultMonsters([1]);

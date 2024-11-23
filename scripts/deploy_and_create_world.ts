@@ -7,6 +7,7 @@ import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { HEROES } from "./classes";
 import inputItems from "./items";
 import { StatModifiersStructStruct } from '../typechain-types/contracts/Items';
+import 'dotenv/config';
 
 let owner: SignerWithAddress;
 let addr1: SignerWithAddress; // minter
@@ -21,10 +22,10 @@ async function main() {
 
   const ownerAddress = owner.address;
 
-    // Récupérer le nonce actuel
-    let nonce = await ethers.provider.getTransactionCount(ownerAddress);
-    console.log("Current nonce:", nonce);
-  
+  // Récupérer le nonce actuel
+  let nonce = await ethers.provider.getTransactionCount(ownerAddress);
+  console.log("Current nonce:", nonce);
+
 
   console.log("Owner address:", ownerAddress);
 
@@ -46,16 +47,17 @@ async function main() {
         };
 
         // wait for 2 second
-        // await new Promise(resolve => setTimeout(resolve, 2000));
-        //console.log(`Sending transaction with gasOptions price : ${Number(gasOptions.gasPrice)}, limit ${Number(gasOptions.gasLimit)} ,  nonce ${currentNonce} (attempt ${attempt})`);
-  
+        if (env.network.name !== "localhost") {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          console.log(`Sending transaction with gasOptions price : ${Number(gasOptions.gasPrice)}, limit ${Number(gasOptions.gasLimit)} ,  nonce ${currentNonce} (attempt ${attempt})`);
+        }
         // Appeler la fonction de transaction avec les overrides
         const tx = await txFunc(overrides);
         const receipt = await tx.wait();
-  
+
         // Incrémenter le nonce après une transaction réussie
         nonce++;
-  
+
         return receipt;
       } catch (error: any) {
         if (error.message.includes("nonce too low") && attempt < maxRetries) {
@@ -113,7 +115,7 @@ async function main() {
   let baseURI = "http://localhost:3000";
   // change uri if network is not local
   if (env.network.name !== "localhost") {
-    baseURI = "https://sof-dapp.vercel.app";
+    baseURI = process.env.DAPP_URL || "https://sof-dapp.vercel.app";
   }
 
   const hero = await Hero.deploy(baseURI, ownerAddress, ethers.parseEther("5"));
@@ -204,8 +206,9 @@ async function main() {
   for (const heroClass of HEROES) {
     const tx = await heroClasses.addClass(heroClass.name, heroClass.description, heroClass.maleSkinURI, heroClass.femaleSkinURI);
     await tx.wait();
-    console.log(`Created hero class ${heroClass.name}`);
   }
+  console.log(`Created hero classes`);
+
 
   // Créez les nœuds pour chaque passage en s'appuyant sur un json chargé depuis la dapp, lui meme basé sur la db
   const json = await fetch('http://localhost:3000/api/nodes', {
@@ -225,21 +228,18 @@ async function main() {
       console.log(`Creating node ${object.data.id}`);
       const coolDownHours = object.data.cooldown;
       const coolDown = Number(coolDownHours) * 3600;
-
-      const tx = await sendTransactionWithRetry( () => world.createNode(Number(object.data.id), object.data.id, true, object.data.search_difficulty, coolDown, object.data.is_shelter, { ...gasOptions, nonce: nonce++ }));
+      const tx = await sendTransactionWithRetry(() => world.createNode(Number(object.data.id), object.data.id, true, object.data.search_difficulty, coolDown, object.data.is_shelter, object.data.dangerosity, object.data.monsters_weights, { ...gasOptions, nonce: nonce++ }));
       // Add items to the node
       if (object.data.can_search === true && object.data.items_weights.length > 0) {
-        console.log(`Adding items to node ${object.data.id}`);
-        const tx = await sendTransactionWithRetry( () =>  world.addItemsToNode(Number(object.data.id), object.data.items_weights, { ...gasOptions, nonce: nonce++ }));
-        console.log(`Added items to node ${object.data.id} with weights ${JSON.stringify(object.data.items_weights)}`);
+        const tx = await sendTransactionWithRetry(() => world.addItemsToNode(Number(object.data.id), object.data.items_weights, { ...gasOptions, nonce: nonce++ }));
+        //console.log(`Added items to node ${object.data.id} with weights ${JSON.stringify(object.data.items_weights)}`);
 
         // check if items are added
         const items = await world.getLootForNode(Number(object.data.id));
-        console.log(`Items added to node ${object.data.id}: ${items}`);
+        //console.log(`Items added to node ${object.data.id}: ${items}`);
 
       }
-
-      console.log(`Node created: ${object.data.id} with ID ${Number(object.data.id)}`);
+      //console.log(`Node created: ${object.data.id} with ID ${Number(object.data.id)}`);
     }
   }
 
@@ -248,11 +248,11 @@ async function main() {
     if (object.data.source && object.data.target) {
       const fromNodeId = object.data.source;
       const toNodeId = object.data.target;
-      console.log(`Connecting node ${fromNodeId} to node ${toNodeId}`);
+      //console.log(`Connecting node ${fromNodeId} to node ${toNodeId}`);
       // console.log(`Dangerosity: ${object.data.monsters_weights}`);
       // console.log(object.data.monsters_weights);
-      const tx = await sendTransactionWithRetry( () =>  world.connectNodes(fromNodeId, toNodeId, object.data.dangerosity, object.data.monsters_weights, { ...gasOptions, nonce: nonce++ }));
-      console.log(`Connected node ${fromNodeId} to node ${toNodeId} with dangerosity ${object.data.dangerosity}`);
+      const tx = await sendTransactionWithRetry(() => world.connectNodes(fromNodeId, toNodeId, object.data.dangerosity, object.data.monsters_weights, { ...gasOptions, nonce: nonce++ }));
+      //console.log(`Connected node ${fromNodeId} to node ${toNodeId} with dangerosity ${object.data.dangerosity}`);
     }
   }
   console.log("Graph construction complete.");
@@ -316,9 +316,9 @@ async function main() {
         //   await tx.wait();
         // }
       }
-      console.log(`Modifiers for item ${item.name}: ${statModifiersFinal}`);
-      const tx = await sendTransactionWithRetry( () => items.addConsumable(item.id, item.name, statModifiersFinal, { ...gasOptions, nonce: nonce++ }));
-      console.log(`Added consumable ${item.name}`);
+      //console.log(`Modifiers for item ${item.name}: ${statModifiersFinal}`);
+      const tx = await sendTransactionWithRetry(() => items.addConsumable(item.id, item.name, statModifiersFinal, { ...gasOptions, nonce: nonce++ }));
+      //console.log(`Added consumable ${item.name}`);
     }
     else if (item.type === "armor") {
       let type = 0;
@@ -326,14 +326,14 @@ async function main() {
       else if (item.armor_type === "torso") { type = 1; }
       else if (item.armor_type === "pants") { type = 2; }
       else if (item.armor_type === "boots") { type = 3; }
-      const tx = await sendTransactionWithRetry( () =>  weaponsAndArmors.connect(owner).addArmorType(item.id, item.name, item.defense, item.durability, type, { ...gasOptions, nonce: nonce++ }));
-      console.log(`Added armor ${item.name}`);
+      const tx = await sendTransactionWithRetry(() => weaponsAndArmors.connect(owner).addArmorType(item.id, item.name, item.defense, item.durability, type, { ...gasOptions, nonce: nonce++ }));
+      //console.log(`Added armor ${item.name}`);
     }
     else if (item.type === "weapon") {
-      const tx = await sendTransactionWithRetry( () => weaponsAndArmors.connect(owner).addWeaponType(item.id, item.name, item.damage, item.durability, "", { ...gasOptions, nonce: nonce++ }));
-      console.log(`Added weapon ${item.name}`);
+      const tx = await sendTransactionWithRetry(() => weaponsAndArmors.connect(owner).addWeaponType(item.id, item.name, item.damage, item.durability, "", { ...gasOptions, nonce: nonce++ }));
+      //console.log(`Added weapon ${item.name}`);
     }
-    console.log(`Created item ${item.name}`);
+    //console.log(`Created item ${item.name}`);
   }
 
 
@@ -343,10 +343,10 @@ async function main() {
     .then((response) => response.json())
 
   for (const monster of monstersData) {
-    console.log(`Creating monster ${monster.name}`);
-    console.log(monster);
-    const tx = await sendTransactionWithRetry( () => monsters.createMonster(monster.id, monster.name, monster.HP, monster.STR, monster.AGI, monster.PER, monster.INT, monster.CON, monster.DMG, monster.ARMOR, monster.XP, { ...gasOptions, nonce: nonce++ }));
-    console.log(`Created monster ${monster.name}`);
+    //console.log(`Creating monster ${monster.name}`);
+    //console.log(monster);
+    const tx = await sendTransactionWithRetry(() => monsters.createMonster(monster.id, monster.name, monster.HP, monster.STR, monster.AGI, monster.PER, monster.INT, monster.CON, monster.DMG, monster.ARMOR, monster.XP, { ...gasOptions, nonce: nonce++ }));
+    //console.log(`Created monster ${monster.name}`);
   }
 
   // Add default monsters to the world
@@ -355,8 +355,8 @@ async function main() {
 
 
   // Mint a Hero NFT
-  console.log("Minting a Hero NFT with player address" + owner.address + " to wallet address", '0x1E7405ACB69Fb1c00eAcE6b55C2464a50500c4b3');
-  const mintTx = await game.connect(owner).mintHero('0x1E7405ACB69Fb1c00eAcE6b55C2464a50500c4b3', '0x1E7405ACB69Fb1c00eAcE6b55C2464a50500c4b3', "bob", 0, 10, 10, 10, 10, 10, false, { value: ethers.parseEther("5") });
+  //console.log("Minting a Hero NFT with player address" + owner.address + " to wallet address", '0x1E7405ACB69Fb1c00eAcE6b55C2464a50500c4b3');
+  const mintTx = await game.connect(owner).mintHero('0x1E7405ACB69Fb1c00eAcE6b55C2464a50500c4b3', '0x1E7405ACB69Fb1c00eAcE6b55C2464a50500c4b3', "bob", 0, 7, 10, 13, 12, 8, false, { value: ethers.parseEther("5") });
   await mintTx.wait();
   const heroId = await hero.getLastHeroId();
   console.log("Minted Hero NFT with ID:", heroId.toString());
@@ -366,6 +366,16 @@ async function main() {
   // add wallet address to the authorized wallet of the game contract
   const wlTx = await game.authorizeAddress('0x1E7405ACB69Fb1c00eAcE6b55C2464a50500c4b3');
   await wlTx.wait();
+
+  // Mint items to HeroInventories contract
+  const weaponUniqueTx = await weaponsAndArmors.connect(owner).mintWeapon(heroInventory.getAddress(), 10013);
+  const weapon1 = await weaponUniqueTx.wait();
+
+  //console.log("Weapon minted to HeroInventories contract:", weapon1);
+
+  // Add items to hero's inventory
+  await heroInventory.connect(owner).addERC721ItemToHero(heroId, 1);
+
 
   // Test the consumable
   const txMint = await items.connect(owner).mint(heroInventoryAddress, 1, 1);
@@ -387,12 +397,12 @@ async function main() {
   const txMint3 = await weaponsAndArmors.connect(owner).mintArmor(heroInventoryAddress, 20000);
   await txMint3.wait();
 
-  const addItemTx3 = await heroInventory.connect(owner).addERC721ItemToHero(heroId, 1);
+  const addItemTx3 = await heroInventory.connect(owner).addERC721ItemToHero(heroId, 2);
   await addItemTx3.wait();
 
   // get hero inventory
   const heroInventoryItems = await heroInventory.getHeroInventory(heroId);
-  console.log("Hero inventory items:", heroInventoryItems);
+  //console.log("Hero inventory items:", heroInventoryItems);
 
   // test the use of the consumable
   // const useItemTx = await game.connect(addr4).heroConsumeItem(heroId, 1);
@@ -404,11 +414,11 @@ async function main() {
 
   // Test the hero stats
   const heroStats = await hero.getHeroStats(heroId);
-  console.log(`Hero stats:  HP : ${heroStats[0]} XP : ${heroStats[1]}`);
+  //console.log(`Hero stats:  HP : ${heroStats[0]} XP : ${heroStats[1]}`);
 
   // get hero token URI
   const tokenURI = await hero.tokenURI(heroId);
-  console.log("Hero token URI:", tokenURI);
+  //console.log("Hero token URI:", tokenURI);
 
   // // get the hero node id
   // const heroNodeId = await world.getHeroNode(heroId);
@@ -482,7 +492,7 @@ async function main() {
   //   }
   // }
 
-  console.log("Hero navigation complete.");
+  console.log("Deployement complete.");
 }
 
 // Exécutez le script

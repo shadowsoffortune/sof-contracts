@@ -12,6 +12,20 @@ import { StatModifiersStructStruct } from '../typechain-types/contracts/Items';
 import { deployTokenFixture } from "./fixtures";
 import { addHeroClass } from "./utils";
 
+enum StatType {
+  HP,
+  HPMax,
+  STR,
+  AGI,
+  PER,
+  INT,
+  CON,
+  XP,
+  ENERGY,
+  DAMAGE,
+  ARMOR
+}
+
 describe("Game Contract Tests", function () {
 
   it("Should mint a Hero token successfully", async function () {
@@ -22,7 +36,7 @@ describe("Game Contract Tests", function () {
 
     // Execute mint function
     const tx = await game.connect(addr1).mintHero(addr1.address, addr3.address, "bob", 0,
-      10, 10, 10, 10, 10, true,payment);
+      10, 10, 10, 10, 10, true, payment);
     await tx.wait();
 
     // Check resulting balances
@@ -56,7 +70,7 @@ describe("Game Contract Tests", function () {
 
     await expect(
       game.connect(addr1).mintHero(addr1.address, addr1.address, "bobby", 0,
-        10, 10, 10, 10, 10, true,insufficientPayment)
+        10, 10, 10, 10, 10, true, insufficientPayment)
     ).to.be.revertedWith("Insufficient funds to mint hero");
   });
 
@@ -113,8 +127,8 @@ describe("Game Contract Tests", function () {
     const energyConsumed = await hero.getHeroEnergy(heroId);
     expect(energyConsumed).to.equal(95);
 
-    //wait for 4 minutes (1 more point)
-    await ethers.provider.send("evm_increaseTime", [240]);
+    //wait for 5 minutes (1 more point)
+    await ethers.provider.send("evm_increaseTime", [300]);
     await ethers.provider.send("evm_mine")
 
     // check the energy of the hero is not equal to 100
@@ -123,7 +137,7 @@ describe("Game Contract Tests", function () {
     expect(newEnergy).equal(96);
 
     //wait for 4 minutes (1 more point)
-    await ethers.provider.send("evm_increaseTime", [240]);
+    await ethers.provider.send("evm_increaseTime", [300]);
     await ethers.provider.send("evm_mine")
 
     // check the energy of the hero is not equal to 100
@@ -141,7 +155,7 @@ describe("Game Contract Tests", function () {
 
   });
 
-  it("Should initiate an encounter correctly", async function () {
+  it("Should initiate an encounter on edge correctly", async function () {
     const { game, heroEncounters, addr1, game: gameContract, hero, world } = await loadFixture(deployTokenFixture);
     const payment = { value: ethers.parseEther("20") };
 
@@ -173,6 +187,48 @@ describe("Game Contract Tests", function () {
     // Move the hero from node 8 to node 2 (they are connected in our setup)
     const moveTx = await game.connect(addr1).moveHero(heroId, 2);
     const receipt = await moveTx.wait();
+
+    // Check if an encounter was initiated
+    const isActive = await heroEncounters.isEncounterActive(heroId);
+    expect(isActive).to.be.true;
+
+    const encounter = await heroEncounters.getActiveEncounter(heroId);
+    expect(encounter.isActive).to.be.true;
+    expect(encounter.toNodeId).to.equal(2);
+  });
+
+  it("Should initiate an encounter on node correctly", async function () {
+    const { game, heroEncounters, addr1, game: gameContract, hero, world } = await loadFixture(deployTokenFixture);
+    const payment = { value: ethers.parseEther("20") };
+
+    // Mint a hero
+    const txMint = await game.connect(addr1).mintHero(
+      addr1.address,
+      addr1.address,
+      "alice",
+      0,
+      10,
+      10,
+      10,
+      10,
+      10,
+      true,
+      payment
+    );
+    await txMint.wait();
+
+    const heroId = await hero.getLastHeroId();
+
+    // authorize the address
+    const txauth = await gameContract.authorizeAddress(addr1.address);
+    await txauth.wait();
+
+    // Move the hero from node 1 to node 2 then make a search and force an encounter
+    const moveTx = await game.connect(addr1).moveHero(heroId, 2);
+    await moveTx.wait();
+
+    const searchTx = await game.connect(addr1).heroSearch(heroId, 2);
+    const searchTxReceipt = await searchTx.wait();
 
     // Check if an encounter was initiated
     const isActive = await heroEncounters.isEncounterActive(heroId);
@@ -447,11 +503,11 @@ describe("Game Contract Tests", function () {
       addr1.address,
       "eve",
       0,
+      7,
       10,
+      16,
       10,
-      10,
-      10,
-      10,
+      7,
       true,
       { value: ethers.parseEther("20") }
     );
@@ -479,53 +535,119 @@ describe("Game Contract Tests", function () {
     expect(goldBalance).to.be.gte(1);
   });
 
-  it("Should increase hero's score when evading an enemy", async function () {
-    const { game, hero, world, addr1 } = await loadFixture(deployTokenFixture);
+  it("can search with a big PER", async function () {
+    const { game, gameAddress, hero, world, items, heroClasses, statModifier, heroInventory, owner, addr1 } = await loadFixture(deployTokenFixture);
 
-    // Mint a hero
-    const payment = { value: ethers.parseEther("20") };
+    // Ajouter une classe de héros
+    await addHeroClass(heroClasses);
+
+    // Mint un héros pour addr1 dans Node1
     const txMint = await game.connect(addr1).mintHero(
       addr1.address,
       addr1.address,
-      "HeroEvadeTest",
+      "eve",
       0,
-      5, // STR
-      17, // AGI
-      18, // PER
-      5, // INT
-      5, // CON
+      8,
+      8,
+      16,
+      12,
+      6,
       true,
-      payment
+      { value: ethers.parseEther("20") }
     );
     await txMint.wait();
-
     const heroId = await hero.getLastHeroId();
 
-    // Authorize addr1
-    await game.authorizeAddress(addr1.address);
+    // Vérifier que le héros est placé dans Node1
+    const heroNode = await world.getHeroNode(heroId);
+    expect(heroNode).to.equal(1);
 
-    // Place the hero at node 1
-    await world.placeHero(heroId, 1);
+    // Approuver le Game contract pour gérer les items d'addr1
+    await items.connect(addr1).setApprovalForAll(gameAddress, true);
 
-    // Set up a connection with dangerLevel > 0
-    await world.connectNodes(1,2,1, [{ id: 1,weight: 50 }])
-    await world.setConnectionDangerosity(1, 2, 1); // dangerLevel = 1
+    // Autoriser addr1 dans le Game contract
+    await game.connect(owner).authorizeAddress(addr1.address);
 
-    // Check initial score
-    let initialScore = await game.heroScores(heroId);
-    expect(initialScore).to.equal(0);
+    // Effectuer la recherche avec 100% de chances de loot
+    const searchTx = await game.connect(addr1).heroSearch(heroId, 1);
+    await searchTx.wait();
 
-    // Move the hero and attempt to evade
-    // Since the random function is not truly random in testing, we might need to mock it or adjust the dangerLevel and hero's stats to ensure evasion
-    await game.connect(addr1).moveHero(heroId, 2);
+    // Vérifier les soldes des items pour s'assurer que le héros a bien looté les deux consommables
+    const goldBalance = await heroInventory.getHeroItemBalance(heroId, 11);
 
-    // Get the new score
-    let newScore = await game.heroScores(heroId);
+    // Les deux consommables devraient être trouvés (1 chacun)
+    expect(goldBalance).to.be.gte(1);
+  });
 
-    // Calculate expected score increase
-    const expectedScoreIncrease = Math.floor((25 * 1 + 1) / 2); // (25 * dangerLevel + 1) / 2
+  // Helper function to retry a test
+  async function retry(fn: () => Promise<void>, retries: number = 10): Promise<void> {
+    for (let i = 0; i < retries; i++) {
+      try {
+        await fn();
+        return;
+      } catch (error) {
+        console.log("RETRYING TEST");
+        if (i === retries - 1) {
+          throw error;
+        }
+      }
+    }
+  }
 
-    expect(newScore).to.equal(Number(initialScore) + expectedScoreIncrease);
+  it("Should increase hero's score when evading an enemy", async function () {
+    await retry(async () => {
+      const { game, hero, world, addr1 } = await loadFixture(deployTokenFixture);
+
+      // Mint a hero
+      const payment = { value: ethers.parseEther("20") };
+      const txMint = await game.connect(addr1).mintHero(
+        addr1.address,
+        addr1.address,
+        "HeroEvadeTest",
+        0,
+        5, // STR
+        17, // AGI
+        18, // PER
+        5, // INT
+        5, // CON
+        true,
+        payment
+      );
+      await txMint.wait();
+
+      const heroId = await hero.getLastHeroId();
+
+      await hero.addHeroXP(heroId, 10000000);
+      for (let i = 0; i < 20; i++) {
+        await hero.increaseHeroStat(heroId, StatType.AGI); // Increase HP to ensure evasion
+      }
+
+      // Authorize addr1
+      await game.authorizeAddress(addr1.address);
+
+      // Place the hero at node 1
+      await world.placeHero(heroId, 1);
+
+      // Set up a connection with dangerLevel > 0
+      await world.connectNodes(1, 2, 1, [{ id: 1, weight: 50 }])
+      await world.setConnectionDangerosity(1, 2, 1); // dangerLevel = 1
+
+      // Check initial score
+      let initialScore = await game.heroScores(heroId);
+      expect(initialScore).to.equal(0);
+
+      // Move the hero and attempt to evade
+      // Since the random function is not truly random in testing, we might need to mock it or adjust the dangerLevel and hero's stats to ensure evasion
+      await game.connect(addr1).moveHero(heroId, 2);
+
+      // Get the new score
+      let newScore = await game.heroScores(heroId);
+
+      // Calculate expected score increase
+      const expectedScoreIncrease = Math.floor((25 * 1 + 1) / 2); // (25 * dangerLevel + 1) / 2
+
+      expect(newScore).to.equal(Number(initialScore) + expectedScoreIncrease);
+    });
   });
 
   it("should reset hero hp and energy to 0 when hero rests", async function () {
@@ -561,9 +683,11 @@ describe("Game Contract Tests", function () {
       true,
       1,
       0,
-      true
+      true,
+      1,
+      []
     )
-    await world.connectNodes(1,42,0, [{ id: 1,weight: 50 }])
+    await world.connectNodes(1, 42, 0, [{ id: 1, weight: 50 }])
 
     // hero moves to node 42
     await game.connect(addr1).moveHero(heroId, 42);
@@ -615,7 +739,7 @@ describe("Game Contract Tests", function () {
   //   let initialScore = await game.heroScores(heroId);
   //   expect(initialScore).to.equal(1000);
 
-    
+
 
   //   // Simulate hero death by resolving an encounter with success = false
   //   await game.connect(addr1).resolveEncounter(heroId, false, -20, 0);

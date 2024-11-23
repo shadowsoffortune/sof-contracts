@@ -14,15 +14,15 @@ contract Monsters is Ownable {
     function createMonster(
         uint256 id,
         string memory monsterName,
-        uint8 HP,
-        uint8 STR,
-        uint8 AGI,
-        uint8 PER,
-        uint8 INT,
-        uint8 CON, 
+        uint16 HP,
+        uint16 STR,
+        uint16 AGI,
+        uint16 PER,
+        uint16 INT,
+        uint16 CON, 
         string memory damage,
-        uint8 armor,
-        uint8 XP
+        uint16 armor,
+        uint16 XP
     ) public onlyOwner {
 
         monsterStats[id] = HeroStats({
@@ -47,14 +47,14 @@ contract Monsters is Ownable {
 
     function setMonsterStats(
         uint256 _monsterId,
-        uint8 HP,
-        uint8 STR,
-        uint8 AGI,
-        uint8 PER,
-        uint8 INT,
-        uint8 CON,
+        uint16 HP,
+        uint16 STR,
+        uint16 AGI,
+        uint16 PER,
+        uint16 INT,
+        uint16 CON,
         string memory damage,
-        uint8 armor
+        uint16 armor
     ) public onlyOwner {
         monsterStats[_monsterId] = HeroStats({
             HPMax: HP,

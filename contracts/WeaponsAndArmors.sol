@@ -49,7 +49,7 @@ contract WeaponsAndArmors is ERC721, Ownable {
     struct ArmorType {
         uint256 typeId;
         string name;
-        uint8 defense;
+        uint16 defense;
         uint16 maxDurability;
         ArmorTypeEnum armorSlot;
     }
@@ -93,7 +93,7 @@ contract WeaponsAndArmors is ERC721, Ownable {
     function addArmorType(
         uint256 typeId,
         string memory name,
-        uint8 defense,
+        uint16 defense,
         uint16 maxDurability,
         ArmorTypeEnum armorSlot
     ) external onlyOwner {
@@ -166,12 +166,13 @@ contract WeaponsAndArmors is ERC721, Ownable {
     function reduceDurability(
         uint256 tokenId,
         uint16 amount
-    ) external onlyInventoryOrOwner {
+    ) external onlyInventoryOrOwner returns (uint16) {
         require(
             itemTypes[tokenId] == ItemType.Weapon ||
                 itemTypes[tokenId] == ItemType.Armor,
             "Token is not an item"
         );
+        uint16 durability = 0;
         if (itemTypes[tokenId] == ItemType.Weapon) {
             WeaponInstance storage weapon = weaponInstances[tokenId];
             require(
@@ -184,6 +185,7 @@ contract WeaponsAndArmors is ERC721, Ownable {
                 delete weaponInstances[tokenId];
                 delete itemTypes[tokenId];
             }
+            durability = weapon.currentDurability;
         } else if (itemTypes[tokenId] == ItemType.Armor) {
             ArmorInstance storage armor = armorInstances[tokenId];
             require(armor.currentDurability >= amount, "Not enough durability");
@@ -193,10 +195,12 @@ contract WeaponsAndArmors is ERC721, Ownable {
                 delete armorInstances[tokenId];
                 delete itemTypes[tokenId];
             }
+            durability = armor.currentDurability;
         }
+        return durability;
     }
 
-    function burn(uint256 tokenId) external onlyGameOrOwner {
+    function burn(uint256 tokenId) external onlyInventoryOrOwner {
         require(
             itemTypes[tokenId] == ItemType.Weapon ||
                 itemTypes[tokenId] == ItemType.Armor,
@@ -259,7 +263,7 @@ contract WeaponsAndArmors is ERC721, Ownable {
         return armorInstances[tokenId].armorSlot;
     }
 
-    function getArmorDefense(uint256 tokenId) external view returns (uint8) {
+    function getArmorDefense(uint256 tokenId) external view returns (uint16) {
         require(itemTypes[tokenId] == ItemType.Armor, "Token is not an armor");
         return armorInstances[tokenId].defense;
     }

@@ -115,7 +115,7 @@ describe("Items Contract Mint Tests", function () {
 
     // init the world with 10 nodes
     for (let i = 0; i < 10; i++) {
-      const tx = await world.createNode(i, 'Maison' + i, true, 20, 0, false);
+      const tx = await world.createNode(i, 'Maison' + i, true, 20, 0, false, 1, []);
       await tx.wait();
     }
 
@@ -1207,6 +1207,52 @@ describe("Items Contract Mint Tests", function () {
     // check the item balance
     const itemBalance = await heroInventory.getHeroItemBalance(heroId, 1);
     expect(itemBalance).to.equal(0);
+
+  });
+
+
+  it("Hero can throw a weapon he owns", async function () {
+
+    const { game, hero, weaponsAndArmors, world, items, heroInventory, owner, addr1, heroClasses, heroId } = await loadFixture(deployTokenFixture);
+
+    // Prepare items
+    const inputItems = [
+      {
+        id: 1,
+        name: "Test Sword",
+        itemType: 0, // Weapon
+        damage: "1D6+1",
+        defense: 0,
+        durability: 100,
+        damageType: "Physical",
+        armorType: 0,
+        statModifiers: [],
+      }
+    ];
+
+    await weaponsAndArmors.connect(owner).addWeaponType(inputItems[0].id, inputItems[0].name, inputItems[0].damage, inputItems[0].durability, inputItems[0].damageType);
+
+    // Mint items to HeroInventories contract
+    const weaponUniqueTx = await weaponsAndArmors.connect(owner).mintWeapon(heroInventory.getAddress(), 1);
+    const weapon1 = await weaponUniqueTx.wait();
+
+    // Add items to hero's inventory
+    await heroInventory.connect(owner).addERC721ItemToHero(heroId, 1);
+
+    // authorize the address
+    const txauth = await game.authorizeAddress(addr1.address);
+    await txauth.wait();
+
+    // check the item balance
+    const itemBalance = await heroInventory.hasERC721Item(heroId, 1);
+    expect(itemBalance).to.be.true;
+
+    // Throw the weapon
+    await game.connect(addr1).heroThrowERC721Item(heroId, 1);
+
+    // check the weapon balance
+    const weaponBalance = await heroInventory.hasERC721Item(heroId, 1);
+    expect(weaponBalance).to.be.false;
 
   });
 

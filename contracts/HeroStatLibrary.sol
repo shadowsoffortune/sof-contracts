@@ -117,7 +117,7 @@ library HeroStatLibrary {
 
     function regenerateEnergy(HeroStats storage stats) internal {
         uint256 timeElapsed = block.timestamp - stats.lastUpdateTime;
-        uint256 energyToRegen = (timeElapsed * 28) / 60 / 60; // Calculate the energy based on time
+        uint256 energyToRegen =  timeElapsed / 288;
 
         if (stats.ENERGY + energyToRegen > 100) {
             stats.ENERGY = 100;
@@ -148,7 +148,7 @@ library HeroStatLibrary {
         HeroStats storage self
     ) internal view returns (uint256) {
         uint256 timeElapsed = block.timestamp - self.lastUpdateTime;
-        uint256 energyToRegen = (timeElapsed * 28) / 100 / 60;
+        uint256 energyToRegen = timeElapsed / 288;
 
         if (self.ENERGY + energyToRegen > 100) {
             return 100;

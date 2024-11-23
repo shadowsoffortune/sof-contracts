@@ -314,6 +314,25 @@ contract HeroInventories is
         }
     }
 
+    function throwERC721Item(
+        uint256 heroId,
+        uint256 tokenId
+    ) external onlyGameOrOwner nonReentrant {
+        require(
+            weaponsAndArmorsContract.ownerOf(tokenId) == address(this),
+            "Contract does not own this token"
+        );
+        require(
+            heroContract.ownerOf(heroId) != address(0),
+            "Hero does not exist"
+        );
+        // burn the item
+        weaponsAndArmorsContract.burn(tokenId);
+        _removeERC721ItemFromHeroInventory(heroId, tokenId);
+        heroTotalItems[heroId] -= 1;
+    }
+    
+
     // Consume a consumable item from hero's inventory
     function consumeConsumable(
         uint256 heroId,
@@ -481,8 +500,8 @@ contract HeroInventories is
         return heroTotalItems[heroId];
     }
 
-    function getHeroTotalArmor(uint256 heroId) external view returns (uint8) {
-        uint8 totalArmor = 0;
+    function getHeroTotalArmor(uint256 heroId) external view returns (uint16) {
+        uint16 totalArmor = 0;
         Equipment memory equipment = heroEquipment[heroId];
         if (equipment.Head != 0) {
             ArmorInstance memory armor = weaponsAndArmorsContract.getArmor(
@@ -532,17 +551,17 @@ contract HeroInventories is
         uint256 heroId,
         EquipmentSlot slot,
         uint16 amount
-    ) external onlyGameOrOwner {
+    ) external onlyGameOrOwner returns (uint16) {
         uint256 tokenId = _getEquipmentSlotTokenId(heroId, slot);
         require(tokenId != 0, "No item equipped in this slot");
 
-        weaponsAndArmorsContract.reduceDurability(tokenId, amount);
+        uint16 durability = weaponsAndArmorsContract.reduceDurability(tokenId, amount);
 
-        uint16 durability = weaponsAndArmorsContract.getDurability(tokenId);
         if (durability == 0) {
             // L'item est détruit, le déséquiper
             _clearEquipmentSlot(heroId, slot);
         }
+        return durability;
     }
 
     // Implémentation de l'interface IERC721Receiver

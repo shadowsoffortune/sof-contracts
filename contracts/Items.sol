@@ -49,7 +49,7 @@ contract Items is ERC1155, Ownable {
     }
     struct Armor {
         uint256 id;
-        uint8 defense;
+        uint16 defense;
         uint16 durability;
         ArmorType armorType;
     }
@@ -70,7 +70,7 @@ contract Items is ERC1155, Ownable {
         string name;
         ItemType itemType;
         string damage;
-        uint8 defense;
+        uint16 defense;
         uint16 durability;
         string damageType;
         ArmorType armorType;
@@ -148,7 +148,7 @@ contract Items is ERC1155, Ownable {
     function addArmor(
         uint256 id,
         string memory name,
-        uint8 defense,
+        uint16 defense,
         uint16 durability,
         ArmorType armorType
     ) external onlyOwner {
@@ -188,7 +188,7 @@ contract Items is ERC1155, Ownable {
         return armors[id];
     }
 
-    function getArmorDefense(uint256 id) external view returns (uint8 armor) {
+    function getArmorDefense(uint256 id) external view returns (uint16 armor) {
         require(items[id].itemType == ItemType.Armor, "Item is not armor");
         return armors[id].defense;
     }

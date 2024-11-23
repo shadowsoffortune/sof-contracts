@@ -81,7 +81,7 @@ describe("Monster Contract Mint Tests", function () {
 
     // init the world with 10 nodes
     for (let i = 0; i < 10; i++) {
-      const tx = await world.createNode(i, 'Maison' + i, true, 10, 0, false);
+      const tx = await world.createNode(i, 'Maison' + i, true, 10, 0, false, 1, []);
       await tx.wait();
     }
 

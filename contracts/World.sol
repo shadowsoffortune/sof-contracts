@@ -7,17 +7,12 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import "hardhat/console.sol";
 
-import {Node} from "./globals/world.sol";
+import {Node, Monster} from "./globals/world.sol";
 
 contract World is Ownable {
     struct Item {
         uint256 id;
         string name;
-        uint256 weight;
-    }
-
-    struct Monster {
-        uint256 id;
         uint256 weight;
     }
 
@@ -44,6 +39,7 @@ contract World is Ownable {
     mapping(uint256 => mapping(uint256 => uint256))
         public connectionDangerosity;
 
+    mapping(uint256 => mapping(uint256 => uint256)) public nodeDangerosity;
     mapping(uint256 => Item[]) public itemsByNode;
     mapping(uint256 => mapping(uint256 => Monster[]))
         public monstersByConnection;
@@ -85,9 +81,11 @@ contract World is Ownable {
         uint256 nodeId,
         string memory name,
         bool canSearch,
-        uint8 searchDiff,
+        uint16 searchDiff,
         uint256 cooldownPeriod,
-        bool isShelterBool
+        bool isShelterBool,
+        uint256 dangerosity,
+        Monster[] memory monsters
     ) public onlyOwner {
         require(nodes[nodeId].id == 0, "Node ID already exists");
         if (cooldownPeriod == 0) {
@@ -104,7 +102,9 @@ contract World is Ownable {
             canSearch,
             searchDiff,
             cooldownPeriod,
-            isShelterBool
+            isShelterBool,
+            dangerosity,
+            monsters
         );
         ++nodeCount;
         emit NodeCreated(nodeId, name);
@@ -195,6 +195,9 @@ contract World is Ownable {
 
         uint256 chance = (heroEXPL * 100) / (heroEXPL + node.searchDiff);
         uint256 randomValue = random();
+
+        console.log("CHANCE", chance);
+        console.log("RANDOM", randomValue);
 
         if (randomValue >= chance) {
             return new uint256[](0);
@@ -363,7 +366,7 @@ contract World is Ownable {
     function connectNodes(
         uint256 fromNodeId,
         uint256 toNodeId,
-        uint8 dangerosity,
+        uint16 dangerosity,
         Monster[] memory monsters
     ) public onlyOwner {
         require(
@@ -480,6 +483,15 @@ contract World is Ownable {
         return nodeItems[0].id;
     }
 
+    function getMonsterForNode(uint256 nodeId) public returns (uint256) {
+        Monster[] memory nodeMonsters = nodes[nodeId].monsters;
+        require(
+            nodeMonsters.length > 0,
+            "No monsters found for this node"
+        );
+        return selectMonster(nodeMonsters);
+    }
+
     function getMonsterForConnection(
         uint256 fromNodeId,
         uint256 toNodeId
@@ -491,11 +503,14 @@ contract World is Ownable {
             connectionMonsters.length > 0,
             "No monsters found for this connection"
         );
+        return selectMonster(connectionMonsters);
+    }
 
+    function selectMonster(Monster[] memory monsters) internal returns (uint256) {
         // Calculate total weight
         uint256 totalWeight = 0;
-        for (uint256 i = 0; i < connectionMonsters.length; i++) {
-            totalWeight += connectionMonsters[i].weight;
+        for (uint256 i = 0; i < monsters.length; i++) {
+            totalWeight += monsters[i].weight;
         }
 
         // Generate a random number between 1 and totalWeight
@@ -503,16 +518,15 @@ contract World is Ownable {
         uint256 cumulativeWeight = 0;
 
         // Select the monster
-        for (uint256 i = 0; i < connectionMonsters.length; i++) {
-            cumulativeWeight += connectionMonsters[i].weight;
-            console.log("Cumulative weight at monster %d: %d", i, cumulativeWeight);
+        for (uint256 i = 0; i < monsters.length; i++) {
+            cumulativeWeight += monsters[i].weight;
             if (rand <= cumulativeWeight) {
-                return connectionMonsters[i].id;
+                return monsters[i].id;
             }
         }
 
         // If nothing is found, return the first monster
-        return connectionMonsters[0].id;
+        return monsters[0].id;
     }
 
     // Updated: More efficient isConnected function
@@ -563,7 +577,21 @@ contract World is Ownable {
         return connectionDangerosity[fromNodeId][toNodeId];
     }
 
-    function getNodeSearchDiff(uint256 nodeId) public view returns (uint8) {
+    function getNodeDangerosity(
+        uint256 nodeId
+    ) public view returns (uint256) {
+        return nodes[nodeId].dangerosity;
+    }
+
+     function setNodeDangerosity(
+        uint256 nodeId,
+        uint256 dangerosity
+    ) public onlyOwner {
+        require(nodes[nodeId].id != 0, "Node does not exist");
+        nodes[nodeId].dangerosity = dangerosity;
+    }
+
+    function getNodeSearchDiff(uint256 nodeId) public view returns (uint16) {
         return nodes[nodeId].searchDiff;
     }
 

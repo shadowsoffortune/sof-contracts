@@ -5,17 +5,17 @@ struct HeroStats {
     uint16 HPMax;
     uint16 HP;
     uint256 XP;
-    uint8 STR;
-    uint8 AGI;
-    uint8 PER;
-    uint8 INT;
-    uint8 CON;
+    uint16 STR;
+    uint16 AGI;
+    uint16 PER;
+    uint16 INT;
+    uint16 CON;
     uint256 lastUpdateTime;
     uint256 ENERGY;
     string DAMAGE;
-    uint8 ARMOR;
+    uint16 ARMOR;
     uint16 LEVEL;
-    uint8 unspentStatPoints;
+    uint16 unspentStatPoints;
 }
 
 enum StatType {
@@ -70,7 +70,7 @@ struct ArmorInstance {
     uint256 tokenId;
     uint256 typeId;
     string name;
-    uint8 defense;
+    uint16 defense;
     uint16 maxDurability;
     uint16 currentDurability;
     ArmorTypeEnum armorSlot;

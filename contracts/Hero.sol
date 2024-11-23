@@ -169,12 +169,12 @@ contract Hero is ERC721, Ownable {
         address to,
         address payable playerWallet,
         string calldata _name,
-        uint8 classIndex,
-        uint8 strength,
-        uint8 agility,
-        uint8 perception,
-        uint8 intelligence,
-        uint8 constitution,
+        uint16 classIndex,
+        uint16 strength,
+        uint16 agility,
+        uint16 perception,
+        uint16 intelligence,
+        uint16 constitution,
         bool gender
     ) public payable onlyGame returns (uint256) {
         if (msg.value < price) revert InsufficientPayment();
@@ -302,7 +302,7 @@ contract Hero is ERC721, Ownable {
         heroStats[heroId].DAMAGE = damage;
     }
 
-    function changeHeroArmor(uint256 heroId, uint8 armor) public onlyGame {
+    function changeHeroArmor(uint256 heroId, uint16 armor) public onlyGame {
         heroStats[heroId].ARMOR = armor;
     }
 
@@ -376,7 +376,7 @@ contract Hero is ERC721, Ownable {
 
     function getHeroUnspentStatPoints(
         uint256 tokenId
-    ) public view returns (uint8) {
+    ) public view returns (uint16) {
         return heroStats[tokenId].unspentStatPoints;
     }
 
