@@ -193,6 +193,7 @@ async function main() {
     headers: {
       'Content-Type': 'application/json',
       'Cache-Control': 'no-cache',
+      'x-vercel-protection-bypass': process.env.VERCEL_AUTOMATION_BYPASS_SECRET || '',
     },
   }
   )
@@ -236,7 +237,14 @@ async function main() {
 
 
   // Add items to the world
-  const itemsData = await fetch(`${process.env.DAPP_URL}/api/item`)
+  const itemsData = await fetch(`${process.env.DAPP_URL}/api/item`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache',
+      'x-vercel-protection-bypass': process.env.VERCEL_AUTOMATION_BYPASS_SECRET || '',
+    }
+  })
     .then((response) => response.json())
 
   let statModifiersFinal: StatModifiersStructStruct[] = [];
@@ -316,7 +324,14 @@ async function main() {
 
   // Create monsters
 
-  const monstersData = await fetch(`${process.env.DAPP_URL}/api/monsters`)
+  const monstersData = await fetch(`${process.env.DAPP_URL}/api/monsters`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache',
+      'x-vercel-protection-bypass': process.env.VERCEL_AUTOMATION_BYPASS_SECRET || '',
+    }
+  })
     .then((response) => response.json())
 
   for (const monster of monstersData) {
