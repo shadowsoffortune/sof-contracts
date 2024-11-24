@@ -336,7 +336,6 @@ async function main() {
 
   for (const monster of monstersData) {
     //console.log(`Creating monster ${monster.name}`);
-    //console.log(monster);
     const tx = await sendTransactionWithRetry(() => monsters.createMonster(monster.id, monster.name, monster.HP, monster.STR, monster.AGI, monster.PER, monster.INT, monster.CON, monster.DMG, monster.ARMOR, monster.XP, { ...gasOptions, nonce: nonce++ }));
     //console.log(`Created monster ${monster.name}`);
   }
