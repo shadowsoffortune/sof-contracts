@@ -196,8 +196,7 @@ async function main() {
       'x-vercel-protection-bypass': process.env.VERCEL_AUTOMATION_BYPASS_SECRET || '',
     },
   }
-  )
-    .then((response) => response.json())
+  ).then((response) => response.json())
 
   for (const object of json) {
     //node creation
@@ -206,6 +205,18 @@ async function main() {
       console.log(`Creating node ${object.data.id}`);
       const coolDownHours = object.data.cooldown;
       const coolDown = Number(coolDownHours) * 3600;
+
+      console.log("Creating node with parameters:", {
+        nodeId: Number(object.data.id),
+        name: object.data.id,
+        isSearchable: true,
+        searchDifficulty: object.data.search_difficulty,
+        coolDown: coolDown,
+        isShelter: object.data.is_shelter,
+        dangerosity: object.data.dangerosity,
+        monstersWeights: object.data.monsters_weights,
+      });
+
       const tx = await sendTransactionWithRetry(() => world.createNode(Number(object.data.id), object.data.id, true, object.data.search_difficulty, coolDown, object.data.is_shelter, object.data.dangerosity, object.data.monsters_weights, { ...gasOptions, nonce: nonce++ }));
       // Add items to the node
       if (object.data.can_search === true && object.data.items_weights.length > 0) {
@@ -237,7 +248,8 @@ async function main() {
 
 
   // Add items to the world
-  const itemsData = await fetch(`${process.env.DAPP_URL}/api/item`, {
+  console.log('fetching items from the dapp', `${process.env.DAPP_URL}/api/items`);
+  const itemsData = await fetch(`${process.env.DAPP_URL}/api/items`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -323,7 +335,7 @@ async function main() {
 
 
   // Create monsters
-
+  console.log('fetching monsters from the dapp', `${process.env.DAPP_URL}/api/monsters`);
   const monstersData = await fetch(`${process.env.DAPP_URL}/api/monsters`, {
     method: 'GET',
     headers: {
@@ -337,7 +349,7 @@ async function main() {
   for (const monster of monstersData) {
     //console.log(`Creating monster ${monster.name}`);
     const tx = await sendTransactionWithRetry(() => monsters.createMonster(monster.id, monster.name, monster.HP, monster.STR, monster.AGI, monster.PER, monster.INT, monster.CON, monster.DMG, monster.ARMOR, monster.XP, { ...gasOptions, nonce: nonce++ }));
-    //console.log(`Created monster ${monster.name}`);
+    console.log(`Created monster ${monster.name}`);
   }
 
   // Add default monsters to the world
