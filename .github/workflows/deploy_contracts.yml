@@ -73,60 +73,66 @@ jobs:
       run: |
         #!/usr/bin/env bash
 
-        # Fonction pour supprimer un secret sur Vercel
-        delete_secret() {
-          local name=$1
+        # Fonction pour éditer une variable d'environnement
+        edit_env_var() {
+            local key=$1
+            local value=$2
 
-          # Récupérer l'ID du secret existant
-          RESPONSE=$(curl -s -G "https://api.vercel.com/v2/secrets" \
-            -H "Authorization: Bearer $VERCEL_TOKEN" \
-            --data-urlencode "teamId=$VERCEL_TEAM_ID")
+            # Récupérer l'ID de la variable d'environnement existante
+            API_URL="https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID/env?decrypt=false"
+            if [ -n "$VERCEL_TEAM_ID" ]; then
+                API_URL="$API_URL&teamId=$VERCEL_TEAM_ID"
+            fi
 
-          SECRET_ID=$(echo "$RESPONSE" | jq -r --arg name "$name" '.secrets[] | select(.name==$name) | .uid')
+            RESPONSE=$(curl -s -X GET "$API_URL" \
+                -H "Authorization: Bearer $VERCEL_TOKEN" \
+                -H "Content-Type: application/json")
 
-          if [ -n "$SECRET_ID" ]; then
-            # Supprimer le secret existant
-            curl -s -X DELETE "https://api.vercel.com/v2/secrets/$SECRET_ID?teamId=$VERCEL_TEAM_ID" \
-              -H "Authorization: Bearer $VERCEL_TOKEN"
-            echo "Deleted existing secret $name"
-          else
-            echo "Secret $name not found, no deletion performed."
-          fi
-        }
+            echo "$RESPONSE"
 
-        # Fonction pour créer un secret sur Vercel
-        create_secret() {
-          local name=$1
-          local value=$2
+            ENV_ID=$(echo "$RESPONSE" | jq -r --arg key "$key" '.envs[] | select(.key==$key and (.target[] | select(.=="preview"))) | .id')
 
-          curl -s -X POST "https://api.vercel.com/v2/secrets?teamId=$VERCEL_TEAM_ID" \
-            -H "Authorization: Bearer $VERCEL_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "name": "'"$name"'",
-              "value": "'"$value"'"
-            }' > /dev/null
-          echo "Created secret $name"
+            echo "ENV_ID: $ENV_ID"
+
+            if [ -n "$ENV_ID" ]; then
+                # Construire l'URL pour éditer la variable d'environnement
+                EDIT_URL="https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID/env/$ENV_ID"
+                if [ -n "$VERCEL_TEAM_ID" ]; then
+                    EDIT_URL="$EDIT_URL?teamId=$VERCEL_TEAM_ID"
+                fi
+
+                # Préparer le corps de la requête
+                DATA=$(jq -n --arg key "$key" --arg value "$value" '{
+                      "key": $key,
+                      "value": $value,
+                      "type": "encrypted",
+                      "target": ["preview"],
+                      "comment": "Variable mise à jour via GitHub Actions"
+                    }')
+
+                echo "$DATA"
+
+                echo "call with $EDIT_URL"
+
+                echo "curl -s -X PATCH $EDIT_URL -H 'Authorization Bearer $VERCEL_TOKEN' -H 'Content-Type: application/json' -d $DATA"
+
+                # Éditer la variable d'environnement existante
+                curl -s -X PATCH "$EDIT_URL" \
+                    -H "Authorization: Bearer $VERCEL_TOKEN" \
+                    -H "Content-Type: application/json" \
+                    -d "$DATA"
+
+                echo "Edited environment variable $key"
+            else
+                echo "Environment variable $key not found, cannot perform edit."
+            fi
         }
 
         # Supprimer et recréer les secrets
-        delete_secret "NEXT_PUBLIC_GAME_ADDRESS"
-        create_secret "NEXT_PUBLIC_GAME_ADDRESS" "$GAME_ADDRESS"
-
-        delete_secret "NEXT_PUBLIC_WORLD_ADDRESS"
-        create_secret "NEXT_PUBLIC_WORLD_ADDRESS" "$WORLD_ADDRESS"
-
-        delete_secret "NEXT_PUBLIC_HERO_ADDRESS"
-        create_secret "NEXT_PUBLIC_HERO_ADDRESS" "$HERO_ADDRESS"
-
-        delete_secret "NEXT_PUBLIC_HEROENCOUNTERS_ADDRESS"
-        create_secret "NEXT_PUBLIC_HEROENCOUNTERS_ADDRESS" "$HEROENCOUNTERS_ADDRESS"
-
-        delete_secret "NEXT_PUBLIC_HEROCLASSES_ADDRESS"
-        create_secret "NEXT_PUBLIC_HEROCLASSES_ADDRESS" "$HEROCLASSES_ADDRESS"
-
-        delete_secret "NEXT_PUBLIC_MONSTERS_ADDRESS"
-        create_secret "NEXT_PUBLIC_MONSTERS_ADDRESS" "$MONSTERS_ADDRESS"
-
-        delete_secret "NEXT_PUBLIC_HERO_INVENTORIES_ADDRESS"
-        create_secret "NEXT_PUBLIC_HERO_INVENTORIES_ADDRESS" "$HERO_INVENTORIES_ADDRESS"
+        edit_env_var "NEXT_PUBLIC_GAME_ADDRESS" "$GAME_ADDRESS"
+        edit_env_var "NEXT_PUBLIC_WORLD_ADDRESS" "$WORLD_ADDRESS"
+        edit_env_var "NEXT_PUBLIC_HERO_ADDRESS" "$HERO_ADDRESS"
+        edit_env_var "NEXT_PUBLIC_HEROENCOUNTERS_ADDRESS" "$HEROENCOUNTERS_ADDRESS"
+        edit_env_var "NEXT_PUBLIC_HEROCLASSES_ADDRESS" "$HEROCLASSES_ADDRESS"
+        edit_env_var "NEXT_PUBLIC_MONSTERS_ADDRESS" "$MONSTERS_ADDRESS"
+        edit_env_var "NEXT_PUBLIC_HERO_INVENTORIES_ADDRESS" "$HERO_INVENTORIES_ADDRESS"
