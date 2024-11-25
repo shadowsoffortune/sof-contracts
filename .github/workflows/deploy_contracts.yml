@@ -63,6 +63,7 @@ jobs:
       env:
         VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
         GAME_ADDRESS: ${{ env.GAME_ADDRESS }}
         WORLD_ADDRESS: ${{ env.WORLD_ADDRESS }}
         HERO_ADDRESS: ${{ env.HERO_ADDRESS }}
