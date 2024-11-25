@@ -200,7 +200,7 @@ contract Hero is ERC721, Ownable {
         // New: Set hero stats
         heroStats[_tokenIds] = HeroStats({
             HPMax: 20,
-            HP: 20,
+            HP: 20 + 2*constitution + strength,
             XP: 0,
             STR: strength,
             AGI: agility,

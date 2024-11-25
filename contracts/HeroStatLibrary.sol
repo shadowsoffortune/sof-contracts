@@ -74,6 +74,8 @@ library HeroStatLibrary {
 
         if (stat == StatType.STR) {
             stats.STR += 1;
+            stats.HP +=1;
+            stats.HPMax += 1;
         } else if (stat == StatType.AGI) {
             stats.AGI += 1;
         } else if (stat == StatType.PER) {
@@ -82,12 +84,13 @@ library HeroStatLibrary {
             stats.INT += 1;
         } else if (stat == StatType.CON) {
             stats.CON += 1;
+            stats.HP +=2;
+            stats.HPMax += 2;
         } else {
             revert("Invalid stat type");
         }
 
         stats.HPMax += 2;
-        stats.HP += 2;
 
         stats.unspentStatPoints -= 1;
     }
