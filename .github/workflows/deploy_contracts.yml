@@ -74,7 +74,6 @@ jobs:
       run: |
         #!/usr/bin/env bash
 
-        # Fonction pour éditer une variable d'environnement
         edit_env_var() {
             local key=$1
             local value=$2
