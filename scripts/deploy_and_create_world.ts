@@ -161,13 +161,13 @@ async function main() {
   const monstersAddress = await monsters.getAddress();
   console.log("Deployed monsters contract at:", monstersAddress);
 
-  console.log("NEXT_PUBLIC_GAME_ADDRESS=", gameAddress);
-  console.log("NEXT_PUBLIC_WORLD_ADDRESS=", worldAddress);
-  console.log("NEXT_PUBLIC_HERO_ADDRESS=", heroAddress);
-  console.log("NEXT_PUBLIC_HEROENCOUNTERS_ADDRESS=", await heroEncountersAddress);
-  console.log("NEXT_PUBLIC_HEROCLASSES_ADDRESS=", await heroClassessAddress);
-  console.log("NEXT_PUBLIC_MONSTERS_ADDRESS=", monstersAddress);
-  console.log("NEXT_PUBLIC_HERO_INVENTORIES_ADDRESS=", heroInventoryAddress);
+  console.log("NEXT_PUBLIC_GAME_ADDRESS="+gameAddress);
+  console.log("NEXT_PUBLIC_WORLD_ADDRESS="+worldAddress);
+  console.log("NEXT_PUBLIC_HERO_ADDRESS="+heroAddress);
+  console.log("NEXT_PUBLIC_HEROENCOUNTERS_ADDRESS="+await heroEncountersAddress);
+  console.log("NEXT_PUBLIC_HEROCLASSES_ADDRESS="+await heroClassessAddress);
+  console.log("NEXT_PUBLIC_MONSTERS_ADDRESS="+monstersAddress);
+  console.log("NEXT_PUBLIC_HERO_INVENTORIES_ADDRESS="+heroInventoryAddress);
 
   // set the game address in the world and hero contract
   await world.setGameAddress(gameAddress);
