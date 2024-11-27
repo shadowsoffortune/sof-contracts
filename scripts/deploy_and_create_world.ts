@@ -178,7 +178,6 @@ async function main() {
   await items.setGameAddress(gameAddress);
   await weaponsAndArmors.setGameAddress(gameAddress);
 
-  // Créer les classes de héros
   for (const heroClass of HEROES) {
     const tx = await heroClasses.addClass(heroClass.name, heroClass.description, heroClass.maleSkinURI, heroClass.femaleSkinURI);
     await tx.wait();
