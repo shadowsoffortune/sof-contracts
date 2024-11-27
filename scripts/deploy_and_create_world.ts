@@ -200,7 +200,6 @@ async function main() {
 
   for (const object of json) {
     //node creation
-    // console.log(`Creating node ${object.data.id}`);
     if (object.data.lng && object.data.lat) {
       console.log(`Creating node ${object.data.id}`);
       const coolDownHours = object.data.cooldown;
