@@ -25,7 +25,6 @@ async function main() {
   console.log("Current nonce:", nonce);
   console.log("Owner address:", ownerAddress);
 
-  // Options de gas (vous pouvez ajuster ces valeurs)
   const gasOptions = {
     gasPrice: ethers.parseUnits("40", "gwei"),
     gasLimit: 8000000, 
