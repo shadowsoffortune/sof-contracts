@@ -178,15 +178,11 @@ contract Game is Ownable {
         console.log("Hero stats PER:", heroStats.PER);
         console.log("Hero stats INT:", heroStats.INT);
         console.log("Hero stats CON:", heroStats.CON);
-        console.log(
-            (uint256(12) * heroStats.AGI + uint256(5) * heroStats.PER) / 10
-        );
-        uint256 heroFurtivity = (uint256(12) *
-            heroStats.AGI +
-            uint256(5) *
-            heroStats.PER) / 10;
-        uint256 failureProbability = (25 * dangerLevel * 100) /
-            (25 * dangerLevel + heroFurtivity);
+        console.log("dangerLevel:", dangerLevel);
+        uint256 heroFurtivity = ((heroStats.AGI +
+            (heroStats.PER / 2) +
+            (heroStats.INT / 4)) / 3);
+        uint256 failureProbability = ((25 * dangerLevel) - heroFurtivity);
         console.log("Hero furtivity: %d", heroFurtivity);
         console.log("Failure probability: %d", failureProbability);
         console.log("Danger level: %d", dangerLevel);
@@ -221,37 +217,45 @@ contract Game is Ownable {
             toNodeId
         );
 
-        uint256 failureProbability = calculateFailureProbability(
-            tokenId,
-            dangerLevel
-        );
-
-        uint256 rand = random();
-        console.log("Random number: %d", rand);
-        // check if hero get encounter
-        if (dangerLevel == 4 || rand < failureProbability) {
-            uint256 monsterType = determineMonsterType(fromNodeId, toNodeId);
-            console.log("Monster type: %d", monsterType);
-            heroEncountersContract.initiateEncounter(
+        if (dangerLevel > 0) {
+            uint256 failureProbability = calculateFailureProbability(
                 tokenId,
-                toNodeId,
-                monsterType,
-                0
+                dangerLevel
             );
-            emit HeroMoved(tokenId, true, monsterType, toNodeId);
-            return EncounterResult(true, monsterType, toNodeId, 0);
-        } else {
-            if (dangerLevel > 0) {
-                console.log(
-                    "hero score",
-                    heroScores[tokenId] + (25 * dangerLevel + 1) / 2
+            uint256 rand = random();
+            console.log("Random number: %d", rand);
+            // check if hero get encounter
+            if (dangerLevel == 4 || rand < failureProbability) {
+                uint256 monsterType = determineMonsterType(
+                    fromNodeId,
+                    toNodeId
                 );
-                updateHeroScore(
+                console.log("Monster type: %d", monsterType);
+                heroEncountersContract.initiateEncounter(
                     tokenId,
-                    heroScores[tokenId] + (25 * dangerLevel + 1) / 2
+                    toNodeId,
+                    monsterType,
+                    0
                 );
-                heroContract.addHeroXP(tokenId, (25 * dangerLevel + 1) / 2);
+                emit HeroMoved(tokenId, true, monsterType, toNodeId);
+                return EncounterResult(true, monsterType, toNodeId, 0);
+            } else {
+                if (dangerLevel > 0) {
+                    console.log(
+                        "hero score",
+                        heroScores[tokenId] + (25 * dangerLevel + 1) / 2
+                    );
+                    updateHeroScore(
+                        tokenId,
+                        heroScores[tokenId] + (25 * dangerLevel + 1) / 2
+                    );
+                    heroContract.addHeroXP(tokenId, (25 * dangerLevel + 1) / 2);
+                }
+                worldContract.moveHero(tokenId, toNodeId);
+                emit HeroMoved(tokenId, false, 0, toNodeId);
+                return EncounterResult(false, 0, toNodeId, 0);
             }
+        } else {
             worldContract.moveHero(tokenId, toNodeId);
             emit HeroMoved(tokenId, false, 0, toNodeId);
             return EncounterResult(false, 0, toNodeId, 0);
@@ -279,6 +283,11 @@ contract Game is Ownable {
 
         // get dangerosity level
         uint256 dangerLevel = worldContract.getNodeDangerosity(nodeId);
+
+        if(dangerLevel == 0) {
+            finalizeSearch(heroId, nodeId, heroEXPL);
+            return EncounterResult(false, 0, nodeId, 1);
+        }
 
         uint256 failureProbability = calculateFailureProbability(
             heroId,
@@ -574,7 +583,9 @@ contract Game is Ownable {
                 emit HeroSearched(
                     tokenId,
                     true,
-                    heroEncountersContract.getActiveEncounter(tokenId).monsterType,
+                    heroEncountersContract
+                        .getActiveEncounter(tokenId)
+                        .monsterType,
                     heroEncountersContract.getActiveEncounter(tokenId).toNodeId
                 );
                 finalizeSearch(

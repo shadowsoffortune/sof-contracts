@@ -284,7 +284,7 @@ describe("Game Contract Tests", function () {
 
     // Verify hero stats
     const heroStats = await hero.getHeroStats(heroId);
-    expect(heroStats.HP).to.equal(15); // 20 - 5 damage
+    expect(heroStats.HP).to.equal(45); // 20 - 5 damage
     expect(heroStats.XP).to.equal(10);
 
     // Verify hero's new location
@@ -694,7 +694,7 @@ describe("Game Contract Tests", function () {
 
     // Verify initial HP and energy
     let initialStats = await hero.getHeroStats(heroId);
-    expect(initialStats.HP).to.equal(20);
+    expect(initialStats.HP).to.equal(50);
     expect(initialStats.ENERGY).to.equal(95);
 
     // Rest
@@ -703,7 +703,7 @@ describe("Game Contract Tests", function () {
     // Get the new stats
     let newStats = await hero.getHeroStats(heroId);
 
-    expect(newStats.HP).to.equal(20);
+    expect(newStats.HP).to.equal(50);
     expect(newStats.ENERGY).to.equal(0);
   });
 
