@@ -303,7 +303,6 @@ contract Game is Ownable {
         require(heroContract.getHeroEnergy(heroId) >= 20, "Not enough energy");
         heroContract.changeEnergy(heroId, -20);
 
-        // get dangerosity level
         uint256 dangerLevel = worldContract.getNodeDangerosity(nodeId);
 
         if(dangerLevel == 0) {
