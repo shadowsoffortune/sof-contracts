@@ -48,8 +48,6 @@ async function main() {
         // Appeler la fonction de transaction avec les overrides
         const tx = await txFunc(overrides);
         const receipt = await tx.wait();
-
-        // Incrémenter le nonce après une transaction réussie
         nonce++;
 
         return receipt;
