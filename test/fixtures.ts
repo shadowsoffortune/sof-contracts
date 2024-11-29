@@ -125,13 +125,13 @@ export async function deployTokenFixture() {
         }
 
         if (i == 2) {
-            nodeDifficulty = 4;
+            nodeDifficulty = 100;
         } else {
             if (i == 1) {
                 nodeDifficulty = 0;
             }
             else {
-                nodeDifficulty = 1;
+                nodeDifficulty = 25;
             }
         }
         const tx = await world.createNode(i, "Maison " + i, true, 1, cooldownPeriod, false, nodeDifficulty, [{ id: 1, weight: 50 }]);

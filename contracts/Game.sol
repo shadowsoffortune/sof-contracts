@@ -190,6 +190,28 @@ contract Game is Ownable {
         return failureProbability;
     }
 
+    function calculateFailureProbabilityOnNode(
+        uint256 tokenId,
+        uint256 dangerLevel
+    ) internal returns (uint256) {
+        HeroStats memory heroStats = heroContract.getHeroStats(tokenId);
+        console.log("Hero stats STR:", heroStats.STR);
+        console.log("Hero stats AGI:", heroStats.AGI);
+        console.log("Hero stats PER:", heroStats.PER);
+        console.log("Hero stats INT:", heroStats.INT);
+        console.log("Hero stats CON:", heroStats.CON);
+        console.log("dangerLevel:", dangerLevel);
+        uint256 heroFurtivity = ((heroStats.AGI +
+            (heroStats.PER / 2) +
+            (heroStats.INT / 4)) / 3);
+        uint256 failureProbability = dangerLevel * 100 / (dangerLevel + heroFurtivity);
+        console.log("Hero furtivity: %d", heroFurtivity);
+        console.log("Failure probability: %d", failureProbability);
+        console.log("Danger level: %d", dangerLevel);
+
+        return failureProbability;
+    }
+
     function moveHero(
         uint256 tokenId,
         uint256 toNodeId
@@ -289,10 +311,11 @@ contract Game is Ownable {
             return EncounterResult(false, 0, nodeId, 1);
         }
 
-        uint256 failureProbability = calculateFailureProbability(
+        uint256 failureProbability = calculateFailureProbabilityOnNode(
             heroId,
             dangerLevel
         );
+        console.log("failure prob on node: %d" , failureProbability);
 
         uint256 rand = random();
         console.log("Random number: %d", rand);
