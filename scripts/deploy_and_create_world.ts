@@ -34,7 +34,6 @@ async function main() {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         nonce = await ethers.provider.getTransactionCount(ownerAddress);
-        // Préparer les overrides avec le nonce actuel
         const currentNonce = nonce;
         const overrides = {
           ...gasOptions,
