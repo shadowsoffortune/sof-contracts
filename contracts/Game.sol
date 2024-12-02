@@ -8,6 +8,7 @@ import "./World.sol";
 import "./HeroEncounters.sol";
 import "./HeroInventories.sol";
 import "./Items.sol";
+import "../utils/heroUtils.sol";
 
 import "hardhat/console.sol";
 
@@ -179,9 +180,7 @@ contract Game is Ownable {
         console.log("Hero stats INT:", heroStats.INT);
         console.log("Hero stats CON:", heroStats.CON);
         console.log("dangerLevel:", dangerLevel);
-        uint256 heroFurtivity = ((heroStats.AGI +
-            (heroStats.PER / 2) +
-            (heroStats.INT / 4)) / 3);
+        uint256 heroFurtivity = HeroUtils.calculateHeroFurtivity(heroStats.AGI, heroStats.PER, heroStats.INT);
         uint256 failureProbability = ((25 * dangerLevel) - heroFurtivity);
         console.log("Hero furtivity: %d", heroFurtivity);
         console.log("Failure probability: %d", failureProbability);
@@ -201,9 +200,7 @@ contract Game is Ownable {
         console.log("Hero stats INT:", heroStats.INT);
         console.log("Hero stats CON:", heroStats.CON);
         console.log("dangerLevel:", dangerLevel);
-        uint256 heroFurtivity = ((heroStats.AGI +
-            (heroStats.PER / 2) +
-            (heroStats.INT / 4)) / 3);
+        uint256 heroFurtivity = HeroUtils.calculateHeroFurtivity(heroStats.AGI, heroStats.PER, heroStats.INT);
         uint256 failureProbability = dangerLevel * 100 / (dangerLevel + heroFurtivity);
         console.log("Hero furtivity: %d", heroFurtivity);
         console.log("Failure probability: %d", failureProbability);
@@ -297,7 +294,7 @@ contract Game is Ownable {
         require(heroLocation == nodeId, "Hero is not at the specified node");
 
         HeroStats memory heroStats = heroContract.getHeroStats(heroId);
-        uint256 heroEXPL = (12 * heroStats.PER + 6 * heroStats.INT) / 10;
+        uint256 heroEXPL = HeroUtils.calculateHeroEXPL(heroStats.PER, heroStats.INT, heroStats.AGI);
 
         heroContract.regenerateEnergy(heroId);
         require(heroContract.getHeroEnergy(heroId) >= 20, "Not enough energy");
@@ -601,8 +598,7 @@ contract Game is Ownable {
             } else {
                 // Search action
                 HeroStats memory heroStats = heroContract.getHeroStats(tokenId);
-                uint256 heroEXPL = (12 * heroStats.PER + 6 * heroStats.INT) /
-                    10;
+                uint256 heroEXPL = HeroUtils.calculateHeroEXPL(heroStats.PER, heroStats.INT, heroStats.AGI);
                 emit HeroSearched(
                     tokenId,
                     true,
