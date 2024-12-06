@@ -198,6 +198,16 @@ async function main() {
       const coolDownHours = object.data.cooldown;
       const coolDown = Number(coolDownHours) * 3600;
 
+      console.log("monsters_weights", object.data.monsters_weights);
+
+      const monsterWeights = object.data.monsters_weights.map((monster: any) => ({
+        id: monster.i,
+        weight: monster.w
+      })
+      );
+
+      console.log("monsterWeights", monsterWeights);
+
       console.log("Creating node with parameters:", {
         nodeId: Number(object.data.id),
         name: object.data.id,
@@ -206,18 +216,30 @@ async function main() {
         coolDown: coolDown,
         isShelter: object.data.is_shelter,
         dangerosity: object.data.dangerosity,
-        monstersWeights: object.data.monsters_weights,
+        monstersWeights: monsterWeights,
       });
 
-      const tx = await sendTransactionWithRetry(() => world.createNode(Number(object.data.id), object.data.id, true, object.data.search_difficulty, coolDown, object.data.is_shelter, object.data.dangerosity, object.data.monsters_weights, { ...gasOptions, nonce: nonce++ }));
+      const tx = await sendTransactionWithRetry(() => world.createNode(Number(object.data.id), object.data.id, true, object.data.search_difficulty, coolDown, object.data.is_shelter, object.data.dangerosity, monsterWeights, { ...gasOptions, nonce: nonce++ }));
       // Add items to the node
       if (object.data.can_search === true && object.data.items_weights.length > 0) {
-        const tx = await sendTransactionWithRetry(() => world.addItemsToNode(Number(object.data.id), object.data.items_weights, { ...gasOptions, nonce: nonce++ }));
+        console.log(`Adding items to node ${object.data.id}`);
+
+        console.log("items_weights", object.data.items_weights);
+        // converting items
+        const itemWeights = object.data.items_weights.map((item: any) => ({
+          id: item.i,
+          name: "",
+          weight: item.w
+        })
+        );
+        console.log("itemWeights", itemWeights);
+        const tx = await sendTransactionWithRetry(() => world.addItemsToNode(Number(object.data.id), itemWeights, { ...gasOptions, nonce: nonce++ }));
         //console.log(`Added items to node ${object.data.id} with weights ${JSON.stringify(object.data.items_weights)}`);
 
+        console.log(`Fetching items for node ${object.data.id}`);
         // check if items are added
         const items = await world.getLootForNode(Number(object.data.id));
-        //console.log(`Items added to node ${object.data.id}: ${items}`);
+       console.log(`Items added to node ${object.data.id}: ${items}`);
 
       }
       //console.log(`Node created: ${object.data.id} with ID ${Number(object.data.id)}`);
@@ -229,11 +251,18 @@ async function main() {
     if (object.data.source && object.data.target) {
       const fromNodeId = object.data.source;
       const toNodeId = object.data.target;
-      //console.log(`Connecting node ${fromNodeId} to node ${toNodeId}`);
-      // console.log(`Dangerosity: ${object.data.monsters_weights}`);
-      // console.log(object.data.monsters_weights);
-      const tx = await sendTransactionWithRetry(() => world.connectNodes(fromNodeId, toNodeId, object.data.dangerosity, object.data.monsters_weights, { ...gasOptions, nonce: nonce++ }));
-      //console.log(`Connected node ${fromNodeId} to node ${toNodeId} with dangerosity ${object.data.dangerosity}`);
+      console.log(`Connecting node ${fromNodeId} to node ${toNodeId}`);
+      console.log(`Dangerosity: ${object.data.monsters_weights}`);
+      console.log(object.data.monsters_weights);
+
+      const monsterWeights = object.data.monsters_weights.map((monster: any) => ({
+        id: monster.i,
+        weight: monster.w
+      })
+      );
+
+      const tx = await sendTransactionWithRetry(() => world.connectNodes(fromNodeId, toNodeId, object.data.dangerosity, monsterWeights, { ...gasOptions, nonce: nonce++ }));
+      console.log(`Connected node ${fromNodeId} to node ${toNodeId} with dangerosity ${object.data.dangerosity}`);
     }
   }
   console.log("Graph construction complete.");
@@ -256,46 +285,49 @@ async function main() {
   for (const item of itemsData) {
     statModifiersFinal = [];
     console.log(`Creating item ${item.name}`);
+    console.log(`Item:`,item);
     if (item.type === "consumable") {
       if (!Array.isArray(item.modifiers)) {
         // convert stats to bigint
-        switch (item.modifiers.stat) {
+        switch (item.modifiers.s) {
           case "HP":
-            item.modifiers.stat = 0;
+            item.modifiers.s = 0;
             break;
           case "HPMax":
-            item.modifiers.stat = 1;
+            item.modifiers.s = 1;
             break;
           case "STR":
-            item.modifiers.stat = 2;
+            item.modifiers.s = 2;
             break;
           case "AGI":
-            item.modifiers.stat = 3;
+            item.modifiers.s = 3;
             break;
           case "PER":
-            item.modifiers.stat = 4;
+            item.modifiers.s = 4;
             break;
           case "INT":
-            item.modifiers.stat = 5;
+            item.modifiers.s = 5;
             break;
           case "CON":
-            item.modifiers.stat = 6; break;
+            item.modifiers.s = 6; break;
           case "XP":
-            item.modifiers.stat = 7; break;
+            item.modifiers.s = 7; break;
           case "ENERGY":
-            item.modifiers.stat = 8; break;
+            item.modifiers.s = 8; break;
           case "ARMOR":
-            item.modifiers.stat = 10; break;
+            item.modifiers.s = 10; break;
           case "DUR":
-            item.modifiers.stat = 11; break;
+            item.modifiers.s = 11; break;
             break;
         }
 
         const statModifierFinal: StatModifiersStructStruct = {
-          stat: Number(item.modifiers.stat),
-          amount: Number(item.modifiers.value),
-          duration: BigInt(item.modifiers.duration),
+          stat: Number(item.modifiers.s),
+          amount: Number(item.modifiers.v),
+          duration: BigInt(item.modifiers.d),
         };
+
+        console.log(`Stat modifier for item ${item.name}:`, statModifierFinal);
 
         statModifiersFinal.push(statModifierFinal);
 
@@ -305,7 +337,7 @@ async function main() {
         //   await tx.wait();
         // }
       }
-      //console.log(`Modifiers for item ${item.name}: ${statModifiersFinal}`);
+      console.log(`Modifiers for item ${item.name}`,statModifiersFinal);
       const tx = await sendTransactionWithRetry(() => items.addConsumable(item.id, item.name, statModifiersFinal, { ...gasOptions, nonce: nonce++ }));
       //console.log(`Added consumable ${item.name}`);
     }
@@ -315,11 +347,11 @@ async function main() {
       else if (item.armor_type === "torso") { type = 1; }
       else if (item.armor_type === "pants") { type = 2; }
       else if (item.armor_type === "boots") { type = 3; }
-      const tx = await sendTransactionWithRetry(() => weaponsAndArmors.connect(owner).addArmorType(item.id, item.name, item.defense, item.durability, type, { ...gasOptions, nonce: nonce++ }));
+      const tx = await sendTransactionWithRetry(() => weaponsAndArmors.connect(owner).addArmorType(item.id, item.name, item.defense, item.maxDurability, type, { ...gasOptions, nonce: nonce++ }));
       //console.log(`Added armor ${item.name}`);
     }
     else if (item.type === "weapon") {
-      const tx = await sendTransactionWithRetry(() => weaponsAndArmors.connect(owner).addWeaponType(item.id, item.name, item.damage, item.durability, "", { ...gasOptions, nonce: nonce++ }));
+      const tx = await sendTransactionWithRetry(() => weaponsAndArmors.connect(owner).addWeaponType(item.id, item.name, item.damage, item.maxDurability, "", { ...gasOptions, nonce: nonce++ }));
       //console.log(`Added weapon ${item.name}`);
     }
     //console.log(`Created item ${item.name}`);
