@@ -200,14 +200,6 @@ async function main() {
 
       console.log("monsters_weights", object.data.monsters_weights);
 
-      const monsterWeights = object.data.monsters_weights.map((monster: any) => ({
-        id: monster.i,
-        weight: monster.w
-      })
-      );
-
-      console.log("monsterWeights", monsterWeights);
-
       console.log("Creating node with parameters:", {
         nodeId: Number(object.data.id),
         name: object.data.id,
@@ -216,10 +208,10 @@ async function main() {
         coolDown: coolDown,
         isShelter: object.data.is_shelter,
         dangerosity: object.data.dangerosity,
-        monstersWeights: monsterWeights,
+        monstersWeights: object.data.monsters_weights,
       });
 
-      const tx = await sendTransactionWithRetry(() => world.createNode(Number(object.data.id), object.data.id, true, object.data.search_difficulty, coolDown, object.data.is_shelter, object.data.dangerosity, monsterWeights, { ...gasOptions, nonce: nonce++ }));
+      const tx = await sendTransactionWithRetry(() => world.createNode(Number(object.data.id), object.data.id, true, object.data.search_difficulty, coolDown, object.data.is_shelter, object.data.dangerosity, object.data.monsters_weights, { ...gasOptions, nonce: nonce++ }));
       // Add items to the node
       if (object.data.can_search === true && object.data.items_weights.length > 0) {
         console.log(`Adding items to node ${object.data.id}`);
@@ -227,9 +219,9 @@ async function main() {
         console.log("items_weights", object.data.items_weights);
         // converting items
         const itemWeights = object.data.items_weights.map((item: any) => ({
-          id: item.i,
+          id: item.id,
           name: "",
-          weight: item.w
+          weight: item.weight
         })
         );
         console.log("itemWeights", itemWeights);
@@ -255,13 +247,7 @@ async function main() {
       console.log(`Dangerosity: ${object.data.monsters_weights}`);
       console.log(object.data.monsters_weights);
 
-      const monsterWeights = object.data.monsters_weights.map((monster: any) => ({
-        id: monster.i,
-        weight: monster.w
-      })
-      );
-
-      const tx = await sendTransactionWithRetry(() => world.connectNodes(fromNodeId, toNodeId, object.data.dangerosity, monsterWeights, { ...gasOptions, nonce: nonce++ }));
+      const tx = await sendTransactionWithRetry(() => world.connectNodes(fromNodeId, toNodeId, object.data.dangerosity, object.data.monsters_weights, { ...gasOptions, nonce: nonce++ }));
       console.log(`Connected node ${fromNodeId} to node ${toNodeId} with dangerosity ${object.data.dangerosity}`);
     }
   }
