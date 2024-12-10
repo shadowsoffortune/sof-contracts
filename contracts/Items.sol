@@ -21,11 +21,14 @@ contract Items is ERC1155, Ownable {
         _;
     }
 
+    uint256 public constant CURRENCY_ID = 0;
+
     enum ItemType {
         Weapon,
         Armor,
         Consumable,
-        Resource
+        Resource,
+        Currency
     }
 
     struct Item {
@@ -64,6 +67,11 @@ contract Items is ERC1155, Ownable {
     mapping(uint256 => Weapon) public weapons;
     mapping(uint256 => Armor) public armors;
     mapping(uint256 => Consumable) public consumables;
+    mapping(uint256 => uint256) public currencyBalances;
+
+    // Events
+    event CurrencyRewarded(address indexed player, uint256 amount);
+    event CurrencySpent(address indexed player, uint256 amount, string service);
 
     struct ItemInput {
         uint256 id;
@@ -77,7 +85,13 @@ contract Items is ERC1155, Ownable {
         StatModifiersStruct[] statModifiers;
     }
 
-    constructor() ERC1155("") Ownable(msg.sender) {}
+    constructor() ERC1155("") Ownable(msg.sender) {
+        items[CURRENCY_ID] = Item({
+            id: CURRENCY_ID,
+            name: "Game Currency",
+            itemType: ItemType.Currency
+        });
+    }
 
     function setGameAddress(address _gameAddress) external onlyOwner {
         gameAddress = _gameAddress;
@@ -262,5 +276,34 @@ contract Items is ERC1155, Ownable {
             "Item is not a consumable"
         );
         return consumables[itemId].statModifiers;
+    }
+
+    function getCurrencyBalance(uint256 playerId) public view returns (uint256) {
+        return currencyBalances[playerId];
+    }
+
+    function rewardCurrency(
+        address inventory,
+        uint256 playerId,
+        uint256 amount
+    ) external onlyGameOrOwner {
+        _mint(inventory, CURRENCY_ID, amount, "");
+        currencyBalances[playerId] += amount;
+        emit CurrencyRewarded(inventory, amount);
+    }
+
+    function spendCurrency(
+        address inventory,
+        uint256 playerId,
+        uint256 amount,
+        string memory service
+    ) external onlyGameOrOwner {
+        require(
+            currencyBalances[playerId] >= amount,
+            "Insufficient currency balance"
+        );
+        _burn(inventory, CURRENCY_ID, amount);
+        currencyBalances[playerId] -= amount;
+        emit CurrencySpent(inventory, amount, service);
     }
 }

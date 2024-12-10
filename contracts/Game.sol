@@ -589,6 +589,7 @@ contract Game is Ownable {
             updateHeroScore(tokenId, heroScores[tokenId] + xpGain);
             heroContract.changeHeroHP(tokenId, int8(hpChange));
             heroContract.addHeroXP(tokenId, xpGain);
+            itemsContract.rewardCurrency(address(heroInventoryContract), tokenId, randMod(10) + 1);
             if (
                 heroEncountersContract.getActiveEncounter(tokenId).actionType ==
                 0

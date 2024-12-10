@@ -240,7 +240,7 @@ describe("Game Contract Tests", function () {
   });
 
   it("Should resolve an encounter successfully", async function () {
-    const { game, heroEncounters, addr1, hero, world } = await loadFixture(deployTokenFixture);
+    const { game, heroEncounters, addr1, hero, world,items } = await loadFixture(deployTokenFixture);
     const payment = { value: ethers.parseEther("20") };
 
     // Mint a hero
@@ -281,6 +281,11 @@ describe("Game Contract Tests", function () {
     // Check that the encounter is resolved
     isActive = await heroEncounters.isEncounterActive(heroId);
     expect(isActive).to.be.false;
+
+    // Verify hero currency
+    const heroCurrency = await items.getCurrencyBalance(heroId);
+    console.log("heroCurrency", heroCurrency.toString());
+    expect(heroCurrency).to.be.gt(0);
 
     // Verify hero stats
     const heroStats = await hero.getHeroStats(heroId);

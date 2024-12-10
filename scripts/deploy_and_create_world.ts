@@ -164,6 +164,7 @@ async function main() {
   console.log("NEXT_PUBLIC_HEROCLASSES_ADDRESS="+await heroClassessAddress);
   console.log("NEXT_PUBLIC_MONSTERS_ADDRESS="+monstersAddress);
   console.log("NEXT_PUBLIC_HERO_INVENTORIES_ADDRESS="+heroInventoryAddress);
+  console.log("NEXT_PUBLIC_ITEMS_ADDRESS="+itemsAddress);
 
   // set the game address in the world and hero contract
   await world.setGameAddress(gameAddress);
@@ -216,7 +217,7 @@ async function main() {
       if (object.data.can_search === true && object.data.items_weights.length > 0) {
         console.log(`Adding items to node ${object.data.id}`);
 
-        console.log("items_weights", object.data.items_weights);
+        // console.log("items_weights", object.data.items_weights);
         // converting items
         const itemWeights = object.data.items_weights.map((item: any) => ({
           id: item.id,
@@ -224,7 +225,7 @@ async function main() {
           weight: item.weight
         })
         );
-        console.log("itemWeights", itemWeights);
+        // console.log("itemWeights", itemWeights);
         const tx = await sendTransactionWithRetry(() => world.addItemsToNode(Number(object.data.id), itemWeights, { ...gasOptions, nonce: nonce++ }));
         //console.log(`Added items to node ${object.data.id} with weights ${JSON.stringify(object.data.items_weights)}`);
 
@@ -244,8 +245,8 @@ async function main() {
       const fromNodeId = object.data.source;
       const toNodeId = object.data.target;
       console.log(`Connecting node ${fromNodeId} to node ${toNodeId}`);
-      console.log(`Dangerosity: ${object.data.monsters_weights}`);
-      console.log(object.data.monsters_weights);
+      // console.log(`Dangerosity: ${object.data.monsters_weights}`);
+      // console.log(object.data.monsters_weights);
 
       const tx = await sendTransactionWithRetry(() => world.connectNodes(fromNodeId, toNodeId, object.data.dangerosity, object.data.monsters_weights, { ...gasOptions, nonce: nonce++ }));
       console.log(`Connected node ${fromNodeId} to node ${toNodeId} with dangerosity ${object.data.dangerosity}`);
@@ -271,7 +272,7 @@ async function main() {
   for (const item of itemsData) {
     statModifiersFinal = [];
     console.log(`Creating item ${item.name}`);
-    console.log(`Item:`,item);
+    // console.log(`Item:`,item);
     if (item.type === "consumable") {
       if (!Array.isArray(item.modifiers)) {
         // convert stats to bigint
@@ -313,7 +314,7 @@ async function main() {
           duration: BigInt(item.modifiers.d),
         };
 
-        console.log(`Stat modifier for item ${item.name}:`, statModifierFinal);
+        // console.log(`Stat modifier for item ${item.name}:`, statModifierFinal);
 
         statModifiersFinal.push(statModifierFinal);
 
@@ -323,7 +324,7 @@ async function main() {
         //   await tx.wait();
         // }
       }
-      console.log(`Modifiers for item ${item.name}`,statModifiersFinal);
+      // console.log(`Modifiers for item ${item.name}`,statModifiersFinal);
       const tx = await sendTransactionWithRetry(() => items.addConsumable(item.id, item.name, statModifiersFinal, { ...gasOptions, nonce: nonce++ }));
       //console.log(`Added consumable ${item.name}`);
     }

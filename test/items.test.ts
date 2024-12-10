@@ -1256,4 +1256,46 @@ describe("Items Contract Mint Tests", function () {
 
   });
 
+  it("Should reward currency to a player", async function () {
+    const { game, items, owner, addr1, heroInventoryAddress,heroId } = await loadFixture(deployTokenFixture);
+  
+    // Reward currency to addr1
+    const rewardAmount = 100;
+    await items.connect(owner).rewardCurrency(heroInventoryAddress, heroId, rewardAmount);
+  
+    // Verify the balance of currency for addr1
+    const balance = await items.getCurrencyBalance(heroId); // CURRENCY_ID is 0
+    expect(balance).to.equal(rewardAmount);
+  });
+  
+  it("Should spend currency from a player", async function () {
+    const { game, items, owner, addr1,heroInventoryAddress,heroId } = await loadFixture(deployTokenFixture);
+  
+    // Reward currency to addr1
+    const initialReward = 200;
+    await items.connect(owner).rewardCurrency(heroInventoryAddress, heroId, initialReward);
+  
+    // Spend currency
+    const spendAmount = 50;
+    await items.connect(owner).spendCurrency(heroInventoryAddress, heroId, spendAmount, "Test spend");
+  
+    // Verify the remaining balance
+    const remainingBalance = await items.getCurrencyBalance(heroId);
+    expect(remainingBalance).to.equal(initialReward - spendAmount);
+  });
+  
+  it("Should not allow spending more currency than the balance", async function () {
+    const { game, owner, addr1, items , heroInventoryAddress, heroId} = await loadFixture(deployTokenFixture);
+  
+    // Reward currency to addr1
+    const rewardAmount = 50;
+    await items.connect(owner).rewardCurrency(heroInventoryAddress, heroId, rewardAmount);
+  
+    // Attempt to spend more currency than available
+    const spendAmount = 100;
+    await expect(
+      items.connect(owner).spendCurrency(heroInventoryAddress, heroId, spendAmount, "Test spend")
+    ).to.be.revertedWith("Insufficient currency balance");
+  });
+
 });

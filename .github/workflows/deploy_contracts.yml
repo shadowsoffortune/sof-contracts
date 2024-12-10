@@ -50,6 +50,7 @@ jobs:
         HEROCLASSES_ADDRESS=$(grep "NEXT_PUBLIC_HEROCLASSES_ADDRESS=" script_output.txt | awk -F= '{print $2}')
         MONSTERS_ADDRESS=$(grep "NEXT_PUBLIC_MONSTERS_ADDRESS=" script_output.txt | awk -F= '{print $2}')
         HERO_INVENTORIES_ADDRESS=$(grep "NEXT_PUBLIC_HERO_INVENTORIES_ADDRESS=" script_output.txt | awk -F= '{print $2}')
+        ITEMS_ADDRESS=$(grep "NEXT_PUBLIC_ITEMS_ADDRESS=" script_output.txt | awk -F= '{print $2}')
 
         echo "GAME_ADDRESS=$GAME_ADDRESS" >> $GITHUB_ENV
         echo "WORLD_ADDRESS=$WORLD_ADDRESS" >> $GITHUB_ENV
@@ -58,6 +59,7 @@ jobs:
         echo "HEROCLASSES_ADDRESS=$HEROCLASSES_ADDRESS" >> $GITHUB_ENV
         echo "MONSTERS_ADDRESS=$MONSTERS_ADDRESS" >> $GITHUB_ENV
         echo "HERO_INVENTORIES_ADDRESS=$HERO_INVENTORIES_ADDRESS" >> $GITHUB_ENV
+        echo "ITEMS_ADDRESS=$ITEMS_ADDRESS" >> $GITHUB_ENV
 
     - name: update env variables on Vercel
       env:
@@ -71,6 +73,7 @@ jobs:
         HEROCLASSES_ADDRESS: ${{ env.HEROCLASSES_ADDRESS }}
         MONSTERS_ADDRESS: ${{ env.MONSTERS_ADDRESS }}
         HERO_INVENTORIES_ADDRESS: ${{ env.HERO_INVENTORIES_ADDRESS }}
+        ITEMS_ADDRESS: ${{ env.ITEMS_ADDRESS }}
       run: |
         #!/usr/bin/env bash
 
@@ -136,3 +139,4 @@ jobs:
         edit_env_var "NEXT_PUBLIC_HEROCLASSES_ADDRESS" "$HEROCLASSES_ADDRESS"
         edit_env_var "NEXT_PUBLIC_MONSTERS_ADDRESS" "$MONSTERS_ADDRESS"
         edit_env_var "NEXT_PUBLIC_HERO_INVENTORIES_ADDRESS" "$HERO_INVENTORIES_ADDRESS"
+        edit_env_var "NEXT_PUBLIC_ITEMS_ADDRESS" "$ITEMS_ADDRESS"
