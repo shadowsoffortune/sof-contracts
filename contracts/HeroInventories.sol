@@ -564,6 +564,8 @@ contract HeroInventories is
         return durability;
     }
 
+    
+
     // Implémentation de l'interface IERC721Receiver
     function onERC721Received(
         address operator,
