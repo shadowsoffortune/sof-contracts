@@ -105,7 +105,6 @@ async function main() {
     }
   });
   let baseURI = "http://localhost:3000";
-  // change uri if network is not local
   if (env.network.name !== "localhost") {
     baseURI = process.env.DAPP_URL || "https://sof-dapp.vercel.app";
   }
